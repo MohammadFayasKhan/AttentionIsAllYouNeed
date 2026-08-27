@@ -50,6 +50,8 @@ export const PositionalEncoding: React.FC = () => {
   ];
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsPlaying(false);
+    isPlayingRef.current = false;
     const newVal = parseInt(e.target.value, 10);
     setPosition(newVal);
     virtualPosRef.current = newVal;
@@ -57,7 +59,11 @@ export const PositionalEncoding: React.FC = () => {
   };
 
   const toggleAutoPlay = () => {
-    setIsPlaying((prev) => !prev);
+    setIsPlaying((prev) => {
+      const next = !prev;
+      isPlayingRef.current = next;
+      return next;
+    });
   };
 
   // High-DPI Canvas Rendering Loop with Fluid Delta-Time Interpolation
@@ -342,6 +348,14 @@ export const PositionalEncoding: React.FC = () => {
               min="0"
               max="50"
               value={position}
+              onPointerDown={() => {
+                setIsPlaying(false);
+                isPlayingRef.current = false;
+              }}
+              onTouchStart={() => {
+                setIsPlaying(false);
+                isPlayingRef.current = false;
+              }}
               onChange={handleSliderChange}
               className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-apple-blue"
             />

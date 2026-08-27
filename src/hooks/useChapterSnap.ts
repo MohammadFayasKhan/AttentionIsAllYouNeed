@@ -177,12 +177,18 @@ export function useChapterSnap(sectionIds: string[], initialIndex = 0) {
 
     const handleTouchStart = (e: TouchEvent) => {
       if (isModalOpen || e.touches.length !== 1) return;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('input, button, select, textarea, [role="slider"], canvas')) {
+        touchStartY = 0;
+        touchStartX = 0;
+        return;
+      }
       touchStartY = e.touches[0].clientY;
       touchStartX = e.touches[0].clientX;
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
-      if (isModalOpen) return;
+      if (isModalOpen || touchStartY === 0) return;
       const now = Date.now();
       if (now - lastTriggerTimeRef.current < SCROLL_COOLDOWN_MS || isLockedRef.current) {
         return;

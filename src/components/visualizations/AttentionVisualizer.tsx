@@ -68,6 +68,7 @@ export const AttentionVisualizer: React.FC = () => {
   }, [isPlaying, tokens.length]);
 
   const handleSelectToken = (idx: number) => {
+    setIsPlaying(false);
     setSelectedTokenIndex(idx);
     const token = tokens[idx];
     if (idx === 7) {
@@ -84,6 +85,7 @@ export const AttentionVisualizer: React.FC = () => {
   };
 
   const handleScalingToggle = (checked: boolean) => {
+    setIsPlaying(false);
     setUseScalingFactor(checked);
     if (checked) {
       oneeBridge.emit('slider_change', `“Scaling by 1/√d_k (1/8) counters large dot products and stabilizes softmax gradients!”`);
@@ -93,6 +95,7 @@ export const AttentionVisualizer: React.FC = () => {
   };
 
   const handleTempChange = (val: number) => {
+    setIsPlaying(false);
     setTemperature(val);
     if (val < 0.8) {
       oneeBridge.emit('slider_change', `“Low temp (T=${val.toFixed(1)}) sharpens attention onto the highest scoring tokens!”`);

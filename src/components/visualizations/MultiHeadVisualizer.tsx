@@ -138,6 +138,7 @@ export const MultiHeadVisualizer: React.FC = () => {
   }, [isPlaying, headCount]);
 
   const handleSelectHead = (idx: number) => {
+    setIsPlaying(false);
     setActiveHeadIndex(idx);
     const role = headRoles[idx % headRoles.length];
     oneeBridge.emit('head_select', `“Head ${idx + 1} (${role.name}) isolates a 64-dim subspace!”`);
@@ -272,7 +273,10 @@ export const MultiHeadVisualizer: React.FC = () => {
             max={32}
             step={headCount === 1 ? 1 : 2}
             value={headCount}
+            onPointerDown={() => setIsPlaying(false)}
+            onTouchStart={() => setIsPlaying(false)}
             onChange={(e) => {
+              setIsPlaying(false);
               const val = Number(e.target.value);
               setHeadCount(val);
               setActiveHeadIndex(0);
