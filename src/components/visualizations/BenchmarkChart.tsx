@@ -52,6 +52,7 @@ export const BenchmarkChart: React.FC = () => {
   };
 
   const handleSelectModel = (idx: number) => {
+    setIsPlaying(false);
     setSelectedIdx(idx);
     const item = benchmarkModels[idx];
     if (item.isTransformer) {

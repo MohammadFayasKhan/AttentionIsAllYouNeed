@@ -51,6 +51,7 @@ export const ModelVariationLab: React.FC = () => {
   };
 
   const handleSelectSetting = (idx: number) => {
+    setIsPlaying(false);
     setSelectedIdx(idx);
     const varItem = ablationRows[idx];
     oneeBridge.emit('slider_change', `“Table 3: ${varItem.setting} ➔ ${varItem.devBLEU} BLEU”`);

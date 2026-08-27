@@ -369,7 +369,11 @@ export const PositionalEncoding: React.FC = () => {
             {dimensions.map((d) => (
               <button
                 key={d.dim}
-                onClick={() => setSelectedDimension(d.dim)}
+                onClick={() => {
+                  setIsPlaying(false);
+                  isPlayingRef.current = false;
+                  setSelectedDimension(d.dim);
+                }}
                 className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all ${
                   selectedDimension === d.dim
                     ? `${d.bg} shadow-apple-xs border border-black/10`

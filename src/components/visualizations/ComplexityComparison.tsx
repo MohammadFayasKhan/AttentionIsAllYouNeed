@@ -56,6 +56,7 @@ export const ComplexityComparison: React.FC = () => {
   };
 
   const handleMetricClick = (m: 'complexity' | 'sequential' | 'path') => {
+    setIsPlaying(false);
     setSelectedMetric(m);
     oneeBridge.emit('slider_change', `“Comparing Table 1 across ${m.toUpperCase()} metric!”`);
   };
