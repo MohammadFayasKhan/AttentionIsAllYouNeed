@@ -258,7 +258,7 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
           initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="hidden lg:flex lg:col-span-4 min-w-0 flex-col justify-between h-full bg-gradient-to-b from-blue-50/70 via-white/80 to-slate-50/70 rounded-3xl border border-white/60 p-5 shadow-apple-md backdrop-blur-2xl overflow-hidden relative"
+          className="hidden lg:flex lg:col-span-4 min-w-0 flex-col justify-between h-full bg-white/75 rounded-3xl border border-white/60 p-5 shadow-apple-md backdrop-blur-2xl overflow-hidden relative"
         >
           {/* Contextual Narrator Speech Bubble (Stable Non-Flickering Container) */}
           <div
@@ -289,15 +289,20 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
               transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
               className="relative flex flex-col items-center"
             >
-              {/* Radial Lighting Aura */}
-              <div className="absolute -inset-6 bg-gradient-to-r from-blue-500/20 via-indigo-500/20 to-purple-500/20 rounded-full blur-2xl opacity-70 group-hover:opacity-100 transition-opacity" />
+              {/* Seamless Radial Lighting Aura (Infinite Alpha Falloff - No Hard Edges) */}
+              <div
+                className="absolute -inset-12 rounded-full pointer-events-none opacity-60 group-hover:opacity-90 transition-opacity"
+                style={{
+                  background: 'radial-gradient(circle at 50% 50%, rgba(0, 113, 227, 0.14) 0%, rgba(99, 102, 241, 0.07) 40%, rgba(255, 255, 255, 0) 70%)'
+                }}
+              />
 
               {/* Procedural Avatar Controller */}
               <AvatarController
                 ref={avatarRef}
                 animation={currentAnim}
                 size={270}
-                className="relative z-10 filter drop-shadow-2xl"
+                className="relative z-10 filter drop-shadow-xl"
                 onClick={handleAvatarTap}
               />
 
