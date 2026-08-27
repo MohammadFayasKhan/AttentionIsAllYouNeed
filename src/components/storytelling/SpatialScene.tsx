@@ -258,11 +258,11 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
           initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="hidden lg:flex lg:col-span-4 min-w-0 flex-col justify-between h-full bg-white/75 rounded-3xl border border-white/60 p-5 shadow-apple-md backdrop-blur-2xl overflow-hidden relative"
+          className="hidden lg:flex lg:col-span-4 min-w-0 flex-col justify-between h-full bg-gradient-to-b from-blue-50/90 via-indigo-50/60 to-purple-50/70 rounded-3xl border border-white/80 p-5 shadow-apple-md backdrop-blur-2xl overflow-hidden relative"
         >
           {/* Contextual Narrator Speech Bubble (Stable Non-Flickering Container) */}
           <div
-            className="p-3.5 rounded-2xl bg-white/95 border border-black/10 shadow-apple-sm text-xs font-mono text-apple-secondary cursor-pointer hover:border-blue-300 transition-all select-none"
+            className="p-3.5 rounded-2xl bg-white/95 border border-black/10 shadow-apple-sm text-xs font-mono text-apple-secondary cursor-pointer hover:border-blue-300 transition-all select-none relative z-20"
             onClick={handleAvatarTap}
           >
             <div className="flex items-center justify-between mb-1">
@@ -279,7 +279,7 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
 
           {/* Prominently Rendered 3D Procedural Onee Avatar */}
           <div
-            className="my-auto flex flex-col items-center justify-center cursor-pointer group select-none py-2"
+            className="my-auto flex flex-col items-center justify-center cursor-pointer group select-none py-2 relative z-10"
             onClick={handleAvatarTap}
             style={{ perspective: '1200px' }}
           >
@@ -289,11 +289,16 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
               transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
               className="relative flex flex-col items-center"
             >
-              {/* Seamless Radial Lighting Aura (Infinite Alpha Falloff - No Hard Edges) */}
-              <div
-                className="absolute -inset-12 rounded-full pointer-events-none opacity-60 group-hover:opacity-90 transition-opacity"
+              {/* Luminous Animated Radial Glow Aura */}
+              <motion.div
+                animate={{
+                  scale: [1, 1.15, 1],
+                  opacity: [0.75, 0.95, 0.75]
+                }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute -inset-16 rounded-full pointer-events-none filter blur-2xl"
                 style={{
-                  background: 'radial-gradient(circle at 50% 50%, rgba(0, 113, 227, 0.14) 0%, rgba(99, 102, 241, 0.07) 40%, rgba(255, 255, 255, 0) 70%)'
+                  background: 'radial-gradient(circle at 50% 50%, rgba(0, 113, 227, 0.35) 0%, rgba(99, 102, 241, 0.22) 40%, rgba(168, 85, 247, 0.12) 65%, transparent 80%)'
                 }}
               />
 
@@ -302,11 +307,11 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
                 ref={avatarRef}
                 animation={currentAnim}
                 size={270}
-                className="relative z-10 filter drop-shadow-xl"
+                className="relative z-10 filter drop-shadow-2xl"
                 onClick={handleAvatarTap}
               />
 
-              <div className="mt-2 px-3.5 py-1.5 rounded-full bg-apple-blue text-white shadow-apple-md text-xs font-mono font-bold flex items-center gap-1.5 group-hover:bg-blue-600 transition-all">
+              <div className="mt-2 px-3.5 py-1.5 rounded-full bg-apple-blue text-white shadow-apple-md text-xs font-mono font-bold flex items-center gap-1.5 group-hover:bg-blue-600 transition-all relative z-20">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Ask Onee AI</span>
               </div>

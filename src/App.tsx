@@ -65,45 +65,45 @@ export function App() {
 
   return (
     <div className="h-[100svh] w-screen overflow-hidden bg-[#f5f5f7] text-[#1d1d1f] font-sans relative selection:bg-blue-500/20 selection:text-blue-900 flex flex-col justify-between">
-      {/* Dynamic Ambient Blur Glow Orbs (Infinite Alpha Diffusion) */}
+      {/* Dynamic Ambient Blur Glow Orbs (Rich Vibrant Diffusion) */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <motion.div
           animate={{
-            x: [0, 35, -25, 0],
-            y: [0, -25, 15, 0],
-            scale: [1, 1.1, 0.95, 1],
-            opacity: [0.3, 0.45, 0.3]
+            x: [0, 40, -30, 0],
+            y: [0, -30, 20, 0],
+            scale: [1, 1.15, 0.95, 1],
+            opacity: [0.55, 0.8, 0.55]
           }}
-          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-[20%] -left-[15%] w-[750px] h-[750px] rounded-full blur-[160px]"
+          transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -top-[15%] -left-[10%] w-[700px] h-[700px] rounded-full blur-[120px]"
           style={{
-            background: 'radial-gradient(circle, rgba(0, 113, 227, 0.18) 0%, rgba(99, 102, 241, 0.08) 45%, transparent 70%)'
+            background: 'radial-gradient(circle, rgba(0, 113, 227, 0.35) 0%, rgba(99, 102, 241, 0.22) 45%, transparent 75%)'
           }}
         />
         <motion.div
           animate={{
-            x: [0, -40, 30, 0],
-            y: [0, 30, -20, 0],
-            scale: [1, 0.92, 1.08, 1],
-            opacity: [0.25, 0.4, 0.25]
+            x: [0, -45, 35, 0],
+            y: [0, 35, -20, 0],
+            scale: [1, 0.9, 1.12, 1],
+            opacity: [0.5, 0.75, 0.5]
           }}
-          transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -bottom-[20%] -right-[15%] w-[800px] h-[800px] rounded-full blur-[180px]"
+          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -bottom-[15%] -right-[10%] w-[750px] h-[750px] rounded-full blur-[140px]"
           style={{
-            background: 'radial-gradient(circle, rgba(175, 82, 222, 0.16) 0%, rgba(236, 72, 153, 0.06) 45%, transparent 70%)'
+            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.32) 0%, rgba(236, 72, 153, 0.18) 45%, transparent 75%)'
           }}
         />
         <motion.div
           animate={{
-            x: [0, 25, -30, 0],
-            y: [0, 15, -20, 0],
-            scale: [0.95, 1.05, 0.95],
-            opacity: [0.18, 0.28, 0.18]
+            x: [0, 30, -35, 0],
+            y: [0, 20, -25, 0],
+            scale: [0.95, 1.08, 0.95],
+            opacity: [0.4, 0.65, 0.4]
           }}
-          transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] rounded-full blur-[160px]"
+          transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[120px]"
           style={{
-            background: 'radial-gradient(circle, rgba(0, 199, 190, 0.14) 0%, rgba(0, 113, 227, 0.06) 45%, transparent 70%)'
+            background: 'radial-gradient(circle, rgba(0, 199, 190, 0.28) 0%, rgba(0, 113, 227, 0.16) 45%, transparent 75%)'
           }}
         />
       </div>
