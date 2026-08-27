@@ -2,20 +2,19 @@
  * TransformerArchitecture.tsx
  * --------------------------------------------------------------------------------
  * Architecture Overview:
- * Interactive simulation of the complete Transformer Encoder-Decoder Architecture (Vaswani et al. 2017):
- *   - N = 6 Encoder Layers: Multi-Head Self-Attention + Position-wise FFN + Residual Add & Norm
- *   - N = 6 Decoder Layers: Masked Self-Attention + Encoder-Decoder Cross Attention + FFN + Add & Norm
+ * Interactive Layer Reconstruction of Vaswani et al. (2017, Section 3):
+ *   - Encoder (N=6): Multi-Head Attention + Pointwise Feed-Forward Network.
+ *   - Decoder (N=6): Masked Multi-Head Attention + Encoder-Decoder Cross Attention + Feed-Forward.
+ *   - Residual connections: LayerNorm(x + SubLayer(x))
  *
- * Sizing & Layout Polish:
- *   - Clean, compact sublayer buttons with inline formula tags.
- *   - Self-contained flexible layout that never clips or overflows on any viewport.
- *   - Auto-cycling dataflow pulse across Encoder and Decoder configurations.
+ * Responsive Optimizations:
+ *   - Uses auto-height `w-full h-auto` with flexible grid and wrapping cards.
  */
 
 import React, { useState, useEffect } from 'react';
 import { oneeBridge } from '../../lib/oneeEvents';
 import { motion } from 'framer-motion';
-import { Play, Pause, Layers, Zap, Sparkles, ShieldCheck, Cpu } from 'lucide-react';
+import { Layers, Zap, Play, Pause, Sparkles, ShieldCheck, Cpu } from 'lucide-react';
 
 interface SublayerInfo {
   id: string;
@@ -26,7 +25,7 @@ interface SublayerInfo {
   color: string;
   bgLight: string;
   borderLight: string;
-  icon: 'attention' | 'ffn' | 'cross' | 'mask';
+  icon: 'mha' | 'ffn' | 'norm';
 }
 
 export const TransformerArchitecture: React.FC = () => {
@@ -34,115 +33,119 @@ export const TransformerArchitecture: React.FC = () => {
   const [activeSublayerIdx, setActiveSublayerIdx] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
 
+  // Sublayer components of the Encoder (Section 3.1)
   const encoderSublayers: SublayerInfo[] = [
     {
-      id: 'enc-input',
-      name: '1. Input Embedding + Sinusoidal PE',
-      formula: 'x_0 = Embedding(x) + PE_{(pos, 2i)}',
-      dim: '512 dims',
-      description: 'Continuous word embeddings combined with sinusoidal positional frequencies.',
+      id: 'enc-1',
+      name: '1. Multi-Head Self-Attention',
+      formula: 'MultiHead(Q, K, V) = Concat(head_1, ..., head_8)W^O',
+      dim: 'd_k = d_v = 64, d_model = 512',
+      description: 'Allows each position to attend to all positions in the previous encoder layer simultaneously.',
       color: 'text-blue-600',
-      bgLight: 'bg-blue-50/90',
+      bgLight: 'bg-blue-50/80',
       borderLight: 'border-blue-200',
-      icon: 'attention'
+      icon: 'mha'
     },
     {
-      id: 'enc-mha',
-      name: '2. Multi-Head Self-Attention (h=8)',
-      formula: 'MultiHead(Q,K,V) = Concat(head_1..8)W^O',
-      dim: 'd_k=64 per head',
-      description: 'Allows tokens to attend to all other tokens across 8 parallel subspaces.',
-      color: 'text-indigo-600',
-      bgLight: 'bg-indigo-50/90',
-      borderLight: 'border-indigo-200',
-      icon: 'attention'
-    },
-    {
-      id: 'enc-norm1',
-      name: '3. Residual Connection + LayerNorm',
+      id: 'enc-2',
+      name: '2. Residual Add & LayerNorm',
       formula: 'LayerNorm(x + Sublayer(x))',
-      dim: 'd_model=512',
-      description: 'Carries gradients directly through stack, preventing vanishing gradients in deep N=6 layers.',
+      dim: 'Mean = 0, Var = 1 normalization',
+      description: 'Residual connections propagate gradients directly across all 6 stacked encoder layers.',
       color: 'text-emerald-600',
-      bgLight: 'bg-emerald-50/90',
+      bgLight: 'bg-emerald-50/80',
       borderLight: 'border-emerald-200',
-      icon: 'attention'
+      icon: 'norm'
     },
     {
-      id: 'enc-ffn',
-      name: '4. Position-wise Feed-Forward Network',
-      formula: 'FFN(x) = max(0, x W_1 + b_1)W_2 + b_2',
-      dim: 'd_ff=2048',
-      description: 'Two linear transformations with ReLU applied separately at each position.',
-      color: 'text-amber-600',
-      bgLight: 'bg-amber-50/90',
-      borderLight: 'border-amber-200',
+      id: 'enc-3',
+      name: '3. Position-wise Feed-Forward',
+      formula: 'FFN(x) = max(0, xW_1 + b_1)W_2 + b_2',
+      dim: 'd_model = 512 ➔ d_ff = 2048 ➔ 512',
+      description: 'Applied to each position separately and identically with two linear transformations and ReLU.',
+      color: 'text-purple-600',
+      bgLight: 'bg-purple-50/80',
+      borderLight: 'border-purple-200',
       icon: 'ffn'
+    },
+    {
+      id: 'enc-4',
+      name: '4. Output LayerNorm',
+      formula: 'LayerNorm(x + FFN(x))',
+      dim: 'd_model = 512 tensor output',
+      description: 'Final normalized representation passed to subsequent encoder stack or decoder cross-attention.',
+      color: 'text-teal-600',
+      bgLight: 'bg-teal-50/80',
+      borderLight: 'border-teal-200',
+      icon: 'norm'
     }
   ];
 
+  // Sublayer components of the Decoder (Section 3.1)
   const decoderSublayers: SublayerInfo[] = [
     {
-      id: 'dec-mask',
-      name: '1. Masked Multi-Head Self-Attention',
-      formula: 'softmax(QKᵀ / √d_k + M)V',
-      dim: 'Causal Mask',
-      description: 'Prevents positions from attending to subsequent future tokens, preserving autoregression.',
-      color: 'text-purple-600',
-      bgLight: 'bg-purple-50/90',
-      borderLight: 'border-purple-200',
-      icon: 'mask'
+      id: 'dec-1',
+      name: '1. Masked Multi-Head Attention',
+      formula: 'MaskedAttention(Q, K, V) with Upper-Triangular -∞ Mask',
+      dim: 'Prevents attending to positions i+1, ..., n',
+      description: 'Preserves the autoregressive property ensuring predictions for position i depend only on known outputs.',
+      color: 'text-rose-600',
+      bgLight: 'bg-rose-50/80',
+      borderLight: 'border-rose-200',
+      icon: 'mha'
     },
     {
-      id: 'dec-cross',
+      id: 'dec-2',
       name: '2. Encoder-Decoder Cross Attention',
-      formula: 'Q from Decoder, K & V from Encoder',
-      dim: 'Source Context',
-      description: 'Enables decoder to query full contextual representations generated by encoder stack.',
-      color: 'text-pink-600',
-      bgLight: 'bg-pink-50/90',
-      borderLight: 'border-pink-200',
-      icon: 'cross'
+      formula: 'Q from Decoder, K & V from Encoder Stack',
+      dim: 'd_k = 64, d_model = 512',
+      description: 'Allows every decoder position to attend over all positions in the input sequence.',
+      color: 'text-indigo-600',
+      bgLight: 'bg-indigo-50/80',
+      borderLight: 'border-indigo-200',
+      icon: 'mha'
     },
     {
-      id: 'dec-ffn',
-      name: '3. Position-wise Feed-Forward & Residual',
-      formula: 'FFN(x) + LayerNorm',
-      dim: 'd_ff=2048',
-      description: 'Processes cross-attention activations position-by-position before output projection.',
+      id: 'dec-3',
+      name: '3. Position-wise Feed-Forward',
+      formula: 'FFN(x) = max(0, xW_1 + b_1)W_2 + b_2',
+      dim: 'd_model = 512 ➔ d_ff = 2048 ➔ 512',
+      description: 'Expands into 2048 dimensions with non-linear activation before contracting back to 512.',
+      color: 'text-purple-600',
+      bgLight: 'bg-purple-50/80',
+      borderLight: 'border-purple-200',
+      icon: 'ffn'
+    },
+    {
+      id: 'dec-4',
+      name: '4. Linear & Softmax Output',
+      formula: 'Linear(d_model) ➔ Softmax(V_target)',
+      dim: 'Vocabulary probability distribution',
+      description: 'Converts decoder output to predicted next-token target probabilities.',
       color: 'text-amber-600',
-      bgLight: 'bg-amber-50/90',
+      bgLight: 'bg-amber-50/80',
       borderLight: 'border-amber-200',
-      icon: 'ffn'
-    },
-    {
-      id: 'dec-out',
-      name: '4. Linear Projection & Softmax Vocabulary',
-      formula: 'P(y_t | y_{<t}) = softmax(x W_{vocab})',
-      dim: 'Vocab ~37k',
-      description: 'Converts final 512-dim continuous activations into predicted target token probabilities.',
-      color: 'text-blue-600',
-      bgLight: 'bg-blue-50/90',
-      borderLight: 'border-blue-200',
-      icon: 'ffn'
+      icon: 'norm'
     }
   ];
 
   const currentSublayers = activeStack === 'encoder' ? encoderSublayers : decoderSublayers;
   const activeSublayer = currentSublayers[activeSublayerIdx % currentSublayers.length];
 
-  // Auto-play dataflow cycle
+  // Auto-play dataflow cycle with tab visibility awareness
   useEffect(() => {
     if (!isPlaying) return;
 
     const interval = setInterval(() => {
-      setActiveSublayerIdx((prev) => {
-        const next = (prev + 1) % currentSublayers.length;
-        if (next === 0) {
-          setActiveStack((curr) => (curr === 'encoder' ? 'decoder' : 'encoder'));
-        }
-        return next;
-      });
+      if (document.visibilityState === 'visible') {
+        setActiveSublayerIdx((prev) => {
+          const next = (prev + 1) % currentSublayers.length;
+          if (next === 0) {
+            setActiveStack((curr) => (curr === 'encoder' ? 'decoder' : 'encoder'));
+          }
+          return next;
+        });
+      }
     }, 2000);
 
     return () => clearInterval(interval);
@@ -165,11 +168,9 @@ export const TransformerArchitecture: React.FC = () => {
   };
 
   return (
-    <div
-      className="w-full h-full min-h-[200px] p-3 sm:p-4 rounded-3xl backdrop-blur-2xl bg-white/85 border border-white/60 shadow-apple-md flex flex-col justify-between font-sans overflow-hidden"
-    >
+    <div className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-3 sm:p-4 flex flex-col gap-2.5 font-sans gpu-layer">
       {/* Header & Control Bar */}
-      <div className="flex items-center justify-between border-b border-black/5 pb-1.5 gap-1.5 shrink-0 flex-wrap">
+      <div className="flex items-center justify-between border-b border-black/5 pb-2 gap-1.5 flex-wrap">
         <div>
           <h3 className="text-xs sm:text-sm font-bold text-apple-text font-mono flex items-center gap-1.5">
             <span>Transformer Layer Reconstruction</span>
@@ -180,7 +181,6 @@ export const TransformerArchitecture: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-1.5 font-mono text-xs flex-wrap">
-          {/* Auto-Flow Sweep Button */}
           <button
             onClick={toggleAutoPlay}
             className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs ${
@@ -220,24 +220,16 @@ export const TransformerArchitecture: React.FC = () => {
       </div>
 
       {/* Interactive Sublayer Tensor Flow Ladder */}
-      <div className="my-auto py-1 space-y-1 flex-1 flex flex-col justify-center min-h-0">
+      <div className="space-y-2">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 w-full">
           {currentSublayers.map((sub, idx) => {
             const isSelected = idx === activeSublayerIdx;
 
             return (
-              <motion.button
+              <button
                 key={sub.id}
-                onClick={() => {
-                  handleSelectSublayer(idx);
-                }}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                animate={{
-                  borderColor: isSelected ? '#0071e3' : 'rgba(0,0,0,0.06)',
-                  boxShadow: isSelected ? '0 2px 8px rgba(0,113,227,0.15)' : 'none'
-                }}
-                className={`p-2 rounded-xl flex items-center justify-between font-mono text-xs transition-all border relative text-left ${
+                onClick={() => handleSelectSublayer(idx)}
+                className={`p-2 rounded-xl flex items-center justify-between font-mono text-xs transition-all border text-left ${
                   isSelected
                     ? `${sub.bgLight} border-apple-blue font-bold shadow-apple-xs`
                     : 'bg-slate-50 border-black/5 hover:bg-slate-100 text-apple-text'
@@ -257,19 +249,13 @@ export const TransformerArchitecture: React.FC = () => {
                 <span className="text-[9px] text-apple-secondary bg-white px-1.5 py-0.2 rounded border border-black/5 font-semibold shrink-0 ml-1">
                   {sub.dim}
                 </span>
-              </motion.button>
+              </button>
             );
           })}
         </div>
 
         {/* Selected Sublayer Mathematical Breakdown Card */}
-        <motion.div
-          key={activeSublayer.id}
-          initial={{ opacity: 0, y: 2 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-          className={`p-2 rounded-xl ${activeSublayer.bgLight} border ${activeSublayer.borderLight} space-y-0.5 shadow-apple-xs font-mono text-xs shrink-0 w-full`}
-        >
+        <div className={`p-2.5 rounded-xl ${activeSublayer.bgLight} border ${activeSublayer.borderLight} space-y-1 shadow-apple-xs font-mono text-xs w-full`}>
           <div className="flex items-center justify-between flex-wrap gap-1">
             <div className="flex items-center gap-1 font-bold">
               <Sparkles className="w-3 h-3 text-apple-blue" />
@@ -285,11 +271,11 @@ export const TransformerArchitecture: React.FC = () => {
           <p className="text-apple-secondary text-[10px] font-sans leading-tight">
             {activeSublayer.description}
           </p>
-        </motion.div>
+        </div>
       </div>
 
       {/* Architecture Specs Footer */}
-      <div className="border-t border-black/5 pt-1 flex items-center justify-between text-[10px] font-mono text-apple-secondary flex-wrap gap-1 shrink-0">
+      <div className="border-t border-black/5 pt-1.5 flex items-center justify-between text-[10px] font-mono text-apple-secondary flex-wrap gap-1">
         <div className="flex items-center gap-1">
           <ShieldCheck className="w-3 h-3 text-emerald-600" />
           <span>Residual: <strong className="text-apple-text font-bold">LayerNorm(x + SubLayer(x))</strong></span>

@@ -6,41 +6,31 @@
  *   PE_(pos, 2i)   = sin(pos / 10000^(2i / d_model))
  *   PE_(pos, 2i+1) = cos(pos / 10000^(2i / d_model))
  *
- * Core Features:
- *   1. Ultra-Smooth High-DPI Multi-Harmonic Wave Engine:
- *      Uses high-precision delta-time requestAnimationFrame with Retina devicePixelRatio
- *      scaling, rendering 3 continuous harmonic waveforms (low, medium, and high frequencies)
- *      with anti-aliased Bézier smoothing and soft translucent gradient under-fills.
- *   2. Silky Continuous Sub-Pixel Laser Sweep:
- *      Continuously sweeps the position tracker ($pos \in [0, 50]$) with buttery-smooth
- *      sinusoidal time interpolation, eliminating all discrete stutter.
- *   3. Real-Time Linear Algebraic Transformations:
- *      Demonstrates the fixed relative shift property: $[PE_{pos+k}]$ can be computed as a
- *      direct linear rotation matrix $R(\omega_i k)$ applied to $[PE_{pos}]$.
- *   4. Glowing Radial Intersection Beads:
- *      Pulsating luminous halos at the exact wave intersection points with live mathematical vector readouts.
+ * Responsive & Performance Optimizations:
+ *   - Auto-height `w-full h-auto` container fitting cleanly into document flow.
+ *   - High-DPI Canvas with ResizeObserver and tab visibility pause.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
 import { oneeBridge } from '../../lib/oneeEvents';
-import { Play, Pause, RotateCcw, Sparkles, Activity, Layers } from 'lucide-react';
+import { Play, Pause, RotateCcw, Sparkles, Activity } from 'lucide-react';
 
 export const PositionalEncoding: React.FC = () => {
   const [position, setPosition] = useState<number>(14);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [selectedDimension, setSelectedDimension] = useState<number>(0);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameIdRef = useRef<number | null>(null);
   const isPlayingRef = useRef<boolean>(isPlaying);
   isPlayingRef.current = isPlaying;
 
-  const positionRef = useRef<number>(position);
-  positionRef.current = position;
-
   const virtualPosRef = useRef<number>(position);
   const lastTimeRef = useRef<number>(performance.now());
   const phaseRef = useRef<number>(0);
+  const isVisibleRef = useRef<boolean>(true);
+  const sizeRef = useRef<{ width: number; height: number; dpr: number }>({ width: 400, height: 110, dpr: 1 });
 
   // Dimension presets to inspect
   const dimensions = [
@@ -66,53 +56,81 @@ export const PositionalEncoding: React.FC = () => {
     });
   };
 
-  // High-DPI Canvas Rendering Loop with Fluid Delta-Time Interpolation
+  // High-DPI Canvas Rendering Loop
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
     let isMounted = true;
 
-    const resizeCanvas = () => {
-      const dpr = window.devicePixelRatio || 1;
+    const updateCanvasSize = () => {
       const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const width = rect.width;
+      const height = rect.height;
+      if (width <= 0 || height <= 0) return;
+
+      sizeRef.current = { width, height, dpr };
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    updateCanvasSize();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateCanvasSize();
+    });
+    resizeObserver.observe(canvas);
+
+    const intersectionObserver = new IntersectionObserver(([entry]) => {
+      isVisibleRef.current = entry.isIntersecting;
+    }, { threshold: 0.05 });
+    intersectionObserver.observe(container);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        isVisibleRef.current = false;
+      } else {
+        isVisibleRef.current = true;
+        lastTimeRef.current = performance.now();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const render = (time: number) => {
       if (!isMounted) return;
 
-      const dt = Math.min((time - lastTimeRef.current) / 1000, 0.1);
+      if (!isVisibleRef.current || document.visibilityState === 'hidden') {
+        animFrameIdRef.current = requestAnimationFrame(render);
+        return;
+      }
+
+      const dt = Math.min((time - lastTimeRef.current) / 1000, 0.08);
       lastTimeRef.current = time;
 
-      const rect = canvas.getBoundingClientRect();
-      const width = rect.width;
-      const height = rect.height;
+      const { width, height } = sizeRef.current;
+      if (width <= 0 || height <= 0) {
+        animFrameIdRef.current = requestAnimationFrame(render);
+        return;
+      }
 
       ctx.clearRect(0, 0, width, height);
 
-      // Advance fluid phase smoothly at a calm, readable pace
       phaseRef.current += dt * 0.7;
       const phase = phaseRef.current;
 
-      // Silky smooth sub-pixel position auto-sweep at gentle readable speed
       if (isPlayingRef.current) {
-        // Continuous harmonic oscillation between pos 2 and 48
         virtualPosRef.current = 25 + 22 * Math.sin(time * 0.0004);
-        setPosition(Math.round(virtualPosRef.current));
       }
 
       const currentPos = virtualPosRef.current;
       const d_model = 512;
 
-      // --- Subtle Reference Grid ---
+      // Reference Grid
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
@@ -122,7 +140,6 @@ export const PositionalEncoding: React.FC = () => {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Helper function to draw smooth anti-aliased wave with translucent gradient underfill
       const drawWave = (
         freqFactor: number,
         isCosine: boolean,
@@ -133,32 +150,34 @@ export const PositionalEncoding: React.FC = () => {
         amplitude: number
       ) => {
         ctx.beginPath();
-        const points: { x: number; y: number }[] = [];
+        const step = width < 400 ? 3 : 2;
+        let firstX = 0;
+        let firstY = 0;
 
-        for (let x = 0; x <= width; x += 2) {
+        for (let x = 0; x <= width; x += step) {
           const tokenPos = (x / width) * 50;
           const trigVal = isCosine
             ? Math.cos(tokenPos * freqFactor + phase * phaseSpeed)
             : Math.sin(tokenPos * freqFactor + phase * phaseSpeed);
 
           const y = height / 2 + trigVal * amplitude;
-          points.push({ x, y });
+          if (x === 0) {
+            ctx.moveTo(x, y);
+            firstX = x;
+            firstY = y;
+          } else {
+            ctx.lineTo(x, y);
+          }
         }
 
-        // Draw line curve
-        ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 1; i < points.length; i++) {
-          ctx.lineTo(points[i].x, points[i].y);
-        }
         ctx.strokeStyle = strokeColor;
         ctx.lineWidth = lineWidth;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.stroke();
 
-        // Draw translucent underfill
         ctx.lineTo(width, height);
-        ctx.lineTo(0, height);
+        ctx.lineTo(firstX, height);
         ctx.closePath();
         const grad = ctx.createLinearGradient(0, height / 2 - amplitude, 0, height);
         grad.addColorStop(0, fillColorStart);
@@ -168,51 +187,23 @@ export const PositionalEncoding: React.FC = () => {
       };
 
       // 1. Low Frequency Sine (2i = 0, λ = 2π) - Primary Blue
-      drawWave(
-        (1 / Math.pow(10000, 0 / d_model)) * 0.75,
-        false,
-        '#0071e3',
-        'rgba(0, 113, 227, 0.08)',
-        2.5,
-        0.5,
-        height / 3.2
-      );
-
+      drawWave((1 / Math.pow(10000, 0 / d_model)) * 0.75, false, '#0071e3', 'rgba(0, 113, 227, 0.08)', 2.5, 0.5, height / 3.2);
       // 2. Medium Harmonic Sine (2i = 64, λ = 54π) - Radiant Teal
-      drawWave(
-        (1 / Math.pow(10000, (2 * 32) / d_model)) * 0.45,
-        false,
-        '#00c7be',
-        'rgba(0, 199, 190, 0.06)',
-        1.8,
-        -0.35,
-        height / 3.8
-      );
-
+      drawWave((1 / Math.pow(10000, (2 * 32) / d_model)) * 0.45, false, '#00c7be', 'rgba(0, 199, 190, 0.06)', 1.8, -0.35, height / 3.8);
       // 3. High Frequency Cosine (2i = 128, λ = 1468π) - Vibrant Purple
-      drawWave(
-        (1 / Math.pow(10000, (2 * 96) / d_model)) * 0.28,
-        true,
-        '#af52de',
-        'rgba(175, 82, 222, 0.06)',
-        2.0,
-        0.6,
-        height / 3.4
-      );
+      drawWave((1 / Math.pow(10000, (2 * 96) / d_model)) * 0.28, true, '#af52de', 'rgba(175, 82, 222, 0.06)', 2.0, 0.6, height / 3.4);
 
-      // --- Active Token Laser Marker with Soft Glow Halo ---
+      // Active Token Laser Marker
       const indicatorX = (currentPos / 50) * width;
 
-      // Soft glow beam
       ctx.beginPath();
-      const laserGlow = ctx.createLinearGradient(indicatorX - 8, 0, indicatorX + 8, 0);
+      const laserGlow = ctx.createLinearGradient(indicatorX - 6, 0, indicatorX + 6, 0);
       laserGlow.addColorStop(0, 'rgba(255, 149, 0, 0)');
-      laserGlow.addColorStop(0.5, 'rgba(255, 149, 0, 0.25)');
+      laserGlow.addColorStop(0.5, 'rgba(255, 149, 0, 0.2)');
       laserGlow.addColorStop(1, 'rgba(255, 149, 0, 0)');
       ctx.fillStyle = laserGlow;
-      ctx.fillRect(indicatorX - 8, 0, 16, height);
+      ctx.fillRect(indicatorX - 6, 0, 12, height);
 
-      // Sharp central dashed laser
       ctx.beginPath();
       ctx.strokeStyle = '#ff9500';
       ctx.setLineDash([4, 3]);
@@ -222,31 +213,26 @@ export const PositionalEncoding: React.FC = () => {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Exact intersection coordinates on active waves
       const yBlue = height / 2 + Math.sin(currentPos * (1 / Math.pow(10000, 0 / d_model)) * 0.75 + phase * 0.5) * (height / 3.2);
       const yPurple = height / 2 + Math.cos(currentPos * (1 / Math.pow(10000, (2 * 96) / d_model)) * 0.28 + phase * 0.6) * (height / 3.4);
 
-      // Draw Luminous Glowing Intersection Beads
       const drawBead = (x: number, y: number, color: string, glowColor: string) => {
-        // Outer halo
         ctx.beginPath();
-        const beadGlow = ctx.createRadialGradient(x, y, 1, x, y, 9);
+        const beadGlow = ctx.createRadialGradient(x, y, 1, x, y, 8);
         beadGlow.addColorStop(0, glowColor);
         beadGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
         ctx.fillStyle = beadGlow;
-        ctx.arc(x, y, 9, 0, Math.PI * 2);
+        ctx.arc(x, y, 8, 0, Math.PI * 2);
         ctx.fill();
 
-        // Solid inner bead
         ctx.beginPath();
         ctx.fillStyle = color;
-        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // Specular center highlight
         ctx.beginPath();
         ctx.fillStyle = '#ffffff';
-        ctx.arc(x - 1, y - 1, 1.2, 0, Math.PI * 2);
+        ctx.arc(x - 1, y - 1, 1, 0, Math.PI * 2);
         ctx.fill();
       };
 
@@ -260,19 +246,20 @@ export const PositionalEncoding: React.FC = () => {
 
     return () => {
       isMounted = false;
-      window.removeEventListener('resize', resizeCanvas);
+      resizeObserver.disconnect();
+      intersectionObserver.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
     };
   }, []);
 
-  // Compute live mathematical values at current position
   const pe0 = Math.sin(position / Math.pow(10000, 0 / 512)).toFixed(3);
-  const pe1 = Math.cos(position / Math.pow(10000, 0 / 512)).toFixed(3);
   const pe64 = Math.sin(position / Math.pow(10000, 64 / 512)).toFixed(3);
 
   return (
     <div
-      className="w-full h-full min-h-[220px] p-4 sm:p-5 rounded-3xl backdrop-blur-2xl bg-white/85 border border-white/60 shadow-apple-md flex flex-col justify-between font-sans overflow-hidden"
+      ref={containerRef}
+      className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-4 sm:p-5 flex flex-col gap-3 font-sans gpu-layer"
     >
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-2.5 gap-2 shrink-0">
@@ -290,7 +277,6 @@ export const PositionalEncoding: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 font-mono text-xs flex-wrap">
-          {/* Auto-Play Sweep Button */}
           <button
             onClick={toggleAutoPlay}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold transition-all shadow-apple-xs ${
@@ -315,29 +301,27 @@ export const PositionalEncoding: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Canvas Multi-Harmonic Wave Viewport */}
-      <div className="relative my-auto py-2 flex-1 flex flex-col justify-center min-h-[110px]">
-        <div className="relative w-full h-[105px] sm:h-[120px] rounded-2xl bg-slate-50/70 border border-black/5 overflow-hidden shadow-inner flex items-center justify-center">
-          <canvas
-            ref={canvasRef}
-            className="w-full h-full block cursor-crosshair"
-          />
+      {/* Canvas Multi-Harmonic Wave Viewport */}
+      <div className="relative w-full h-[110px] sm:h-[125px] rounded-2xl bg-slate-50 border border-black/5 overflow-hidden shadow-inner flex items-center justify-center">
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full block cursor-crosshair"
+        />
 
-          {/* Floating Live Laser Readout Badge */}
-          <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-md border border-black/10 rounded-xl px-2.5 py-1 text-[10px] font-mono text-apple-text shadow-apple-xs flex items-center gap-2">
-            <span className="text-amber-600 font-bold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
-              pos = {position}
-            </span>
-            <span className="text-apple-tertiary">|</span>
-            <span className="text-apple-blue font-bold">PE₀ = {pe0}</span>
-            <span className="text-purple-600 font-bold">PE₆₄ = {pe64}</span>
-          </div>
+        {/* Floating Live Laser Readout Badge */}
+        <div className="absolute top-2 right-2 bg-white/95 border border-black/10 rounded-xl px-2.5 py-1 text-[10px] font-mono text-apple-text shadow-apple-xs flex items-center gap-2">
+          <span className="text-amber-600 font-bold flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+            pos = {isPlaying ? Math.round(virtualPosRef.current) : position}
+          </span>
+          <span className="text-apple-tertiary">|</span>
+          <span className="text-apple-blue font-bold">PE₀ = {pe0}</span>
+          <span className="text-purple-600 font-bold">PE₆₄ = {pe64}</span>
         </div>
       </div>
 
       {/* Interactive Position Slider & Dimension Harmonics */}
-      <div className="space-y-2 pt-2 border-t border-black/5 shrink-0">
+      <div className="space-y-2 pt-2 border-t border-black/5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-1">
             <span className="text-xs font-mono font-bold text-apple-secondary shrink-0">
@@ -347,7 +331,7 @@ export const PositionalEncoding: React.FC = () => {
               type="range"
               min="0"
               max="50"
-              value={position}
+              value={isPlaying ? Math.round(virtualPosRef.current) : position}
               onPointerDown={() => {
                 setIsPlaying(false);
                 isPlayingRef.current = false;
@@ -360,7 +344,7 @@ export const PositionalEncoding: React.FC = () => {
               className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-apple-blue"
             />
             <span className="text-xs font-mono font-bold text-apple-blue w-7 text-right">
-              {position}
+              {isPlaying ? Math.round(virtualPosRef.current) : position}
             </span>
           </div>
 
@@ -387,7 +371,7 @@ export const PositionalEncoding: React.FC = () => {
         </div>
 
         {/* Linear Transformation Explanation Bar */}
-        <div className="p-2 rounded-xl bg-blue-50/70 border border-blue-200/80 text-[10px] sm:text-[11px] font-mono text-apple-text flex items-center justify-between gap-2 shadow-apple-xs">
+        <div className="p-2 rounded-xl bg-blue-50/80 border border-blue-200 text-[10px] sm:text-[11px] font-mono text-apple-text flex items-center justify-between gap-2 shadow-apple-xs">
           <div className="flex items-center gap-1.5 min-w-0">
             <Sparkles className="w-3.5 h-3.5 text-apple-blue shrink-0" />
             <span className="truncate">

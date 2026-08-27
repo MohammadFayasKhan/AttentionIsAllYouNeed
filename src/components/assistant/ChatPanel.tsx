@@ -115,18 +115,26 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     isUserScrolledUpRef.current = !atBottom;
   };
 
-  const scrollToBottomIfNear = (smooth = true) => {
-    if (!isUserScrolledUpRef.current && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({
-        top: scrollContainerRef.current.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto'
-      });
-    }
-  };
+  const scrollRafIdRef = useRef<number | null>(null);
+
+  const scrollToBottomIfNear = useCallback((smooth = true) => {
+    if (scrollRafIdRef.current) cancelAnimationFrame(scrollRafIdRef.current);
+    scrollRafIdRef.current = requestAnimationFrame(() => {
+      if (!isUserScrolledUpRef.current && scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({
+          top: scrollContainerRef.current.scrollHeight,
+          behavior: smooth ? 'smooth' : 'auto'
+        });
+      }
+    });
+  }, []);
 
   useEffect(() => {
     scrollToBottomIfNear(true);
-  }, [messages, loading, isThinking]);
+    return () => {
+      if (scrollRafIdRef.current) cancelAnimationFrame(scrollRafIdRef.current);
+    };
+  }, [messages, loading, isThinking, scrollToBottomIfNear]);
 
   const handleSend = useCallback(async (textToSend?: string) => {
     const query = textToSend || input;

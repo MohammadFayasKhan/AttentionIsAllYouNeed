@@ -121,12 +121,14 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
     }
   ];
 
-  // Auto-tour animation loop
+  // Auto-tour animation loop with tab visibility awareness
   useEffect(() => {
     if (!isPlaying || isDragging) return;
 
     const interval = setInterval(() => {
-      setCurrentPage((prev) => (prev + 1) % paperPages.length);
+      if (document.visibilityState === 'visible') {
+        setCurrentPage((prev) => (prev + 1) % paperPages.length);
+      }
     }, 3800);
 
     return () => clearInterval(interval);

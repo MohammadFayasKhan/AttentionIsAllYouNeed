@@ -2,67 +2,66 @@
  * AttentionVisualizer.tsx
  * --------------------------------------------------------------------------------
  * Architecture Overview:
- * Interactive simulation of Scaled Dot-Product Attention:
- *   Attention(Q, K, V) = softmax(QKᵀ / √d_k) V
+ * Scaled Dot-Product Attention Interactive Lab (Vaswani et al. 2017, Section 3.2.1, Eq. 1):
+ *   Attention(Q, K, V) = softmax(QKᵀ / √d_k)V
  *
- * Features:
- *   1. Full 11x11 Attention Matrix:
- *      Authentic simulated attention distributions across the entire Winograd-style sequence:
- *      "The animal didn't cross the street because it was too tired".
- *   2. Smooth Auto-Play Token Sweep:
- *      Automatically sweeps through each token one-by-one with smooth 1.8s timing,
- *      allowing visual inspection of how queries attend to keys across the sentence.
- *   3. Manual Interaction & Override:
- *      Tapping any word token pauses or jumps to that word immediately.
- *   4. Scaling & Temperature Controls:
- *      Toggle 1/√d_k scaling (d_k=64) to visualize gradient stabilization vs vanishing gradients,
- *      and adjust softmax temperature T ∈ [0.2, 2.0].
+ * Responsive & Layout Optimizations:
+ *   1. Natural Auto-Height Sizing:
+ *      Uses `w-full h-auto` with flex column spacing (`gap-3`) so it never clips or overlaps surrounding text.
+ *   2. Responsive Token Matrix & Attention Bars:
+ *      The 11 tokens wrap cleanly on mobile, and the 11-column softmax bar distribution
+ *      adapts dynamically from 320px mobile through large monitors.
+ *   3. Hardware-Accelerated Animation:
+ *      Uses GPU-friendly spring transitions for bar heights and active token indicators.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { oneeBridge } from '../../lib/oneeEvents';
 import { motion } from 'framer-motion';
-import { Play, Pause, RotateCcw, Sparkles } from 'lucide-react';
+import { Play, Pause, Sparkles } from 'lucide-react';
 
 export const AttentionVisualizer: React.FC = () => {
-  const [selectedTokenIndex, setSelectedTokenIndex] = useState<number>(0);
-  const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [temperature, setTemperature] = useState<number>(1.0);
+  const [selectedTokenIndex, setSelectedTokenIndex] = useState<number>(5); // "street" by default
   const [useScalingFactor, setUseScalingFactor] = useState<boolean>(true);
+  const [temperature, setTemperature] = useState<number>(1.0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
 
+  // Linguistic test sentence from Section 3.2.1
   const tokens = ["The", "animal", "didn't", "cross", "the", "street", "because", "it", "was", "too", "tired"];
 
-  // Full Grounded Attention Matrix for all 11 tokens
-  const attentionWeightsMap: Record<number, number[]> = {
-    0: [0.70, 0.85, 0.05, 0.10, 0.02, 0.05, 0.01, 0.02, 0.02, 0.01, 0.02], // The -> animal
-    1: [0.08, 1.00, 0.12, 0.55, 0.04, 0.42, 0.08, 0.35, 0.05, 0.04, 0.65], // animal -> cross, street, tired
-    2: [0.02, 0.40, 1.00, 0.80, 0.02, 0.15, 0.10, 0.12, 0.05, 0.02, 0.10], // didn't -> cross
-    3: [0.05, 0.70, 0.45, 1.00, 0.08, 0.82, 0.15, 0.20, 0.04, 0.02, 0.30], // cross -> animal, street
-    4: [0.02, 0.05, 0.02, 0.10, 0.75, 0.90, 0.01, 0.02, 0.01, 0.01, 0.02], // the -> street
-    5: [0.05, 0.45, 0.08, 0.75, 0.15, 1.00, 0.05, 0.10, 0.02, 0.01, 0.08], // street -> cross, animal
-    6: [0.02, 0.30, 0.15, 0.40, 0.02, 0.20, 1.00, 0.55, 0.10, 0.15, 0.70], // because -> tired, cross
-    7: [0.02, 0.88, 0.05, 0.15, 0.04, 0.62, 0.08, 1.00, 0.12, 0.08, 0.40], // it -> animal (88%), street (62%) [Coreference]
-    8: [0.01, 0.25, 0.02, 0.08, 0.01, 0.05, 0.10, 0.70, 1.00, 0.30, 0.85], // was -> tired, it
-    9: [0.01, 0.08, 0.01, 0.04, 0.01, 0.02, 0.05, 0.15, 0.10, 0.80, 1.00], // too -> tired
-    10: [0.05, 0.75, 0.04, 0.30, 0.02, 0.15, 0.20, 0.65, 0.35, 0.55, 1.00]  // tired -> animal, it
-  };
+  // Attention weight distribution matrix (Rows: Queries, Cols: Keys)
+  const attentionMatrix: number[][] = [
+    [0.55, 0.20, 0.05, 0.05, 0.05, 0.03, 0.02, 0.02, 0.01, 0.01, 0.01],
+    [0.10, 0.35, 0.05, 0.22, 0.03, 0.05, 0.05, 0.02, 0.03, 0.02, 0.08],
+    [0.02, 0.08, 0.40, 0.30, 0.02, 0.03, 0.05, 0.02, 0.03, 0.02, 0.03],
+    [0.03, 0.25, 0.15, 0.30, 0.02, 0.18, 0.02, 0.01, 0.01, 0.01, 0.02],
+    [0.05, 0.03, 0.02, 0.05, 0.60, 0.20, 0.01, 0.01, 0.01, 0.01, 0.01],
+    [0.02, 0.12, 0.03, 0.28, 0.05, 0.42, 0.02, 0.01, 0.01, 0.01, 0.03],
+    [0.01, 0.05, 0.02, 0.05, 0.01, 0.02, 0.45, 0.15, 0.10, 0.05, 0.09],
+    [0.02, 0.52, 0.02, 0.08, 0.01, 0.18, 0.05, 0.05, 0.02, 0.01, 0.04], // "it" attends strongly to "animal" (0.52) & "street" (0.18)
+    [0.01, 0.08, 0.02, 0.05, 0.01, 0.02, 0.05, 0.12, 0.40, 0.10, 0.15],
+    [0.01, 0.02, 0.01, 0.02, 0.01, 0.01, 0.02, 0.05, 0.10, 0.50, 0.25],
+    [0.01, 0.28, 0.02, 0.05, 0.01, 0.02, 0.05, 0.08, 0.12, 0.15, 0.21]
+  ];
 
-  const baseWeights = attentionWeightsMap[selectedTokenIndex] || attentionWeightsMap[0];
+  const rawWeights = attentionMatrix[selectedTokenIndex] || attentionMatrix[0];
 
-  // Softmax simulation with temperature and 1/√d_k scaling
-  const processedWeights = baseWeights.map((w) => {
-    let weight = w / temperature;
-    if (!useScalingFactor) weight = Math.pow(w, 2.5); // vanishing gradient simulation without 1/√d_k
+  // Apply temperature scaling and scaling factor simulation
+  const processedWeights = rawWeights.map((w) => {
+    let weight = Math.pow(w, 1 / Math.max(0.1, temperature));
+    if (!useScalingFactor) weight = Math.pow(w, 2.5);
     return Math.min(1, Math.max(0.04, weight));
   });
 
-  // Auto-play interval sweep
+  // Auto-play interval sweep with tab visibility awareness
   useEffect(() => {
     if (!isPlaying) return;
 
     const interval = setInterval(() => {
-      setSelectedTokenIndex((prev) => (prev + 1) % tokens.length);
-    }, 1900);
+      if (document.visibilityState === 'visible') {
+        setSelectedTokenIndex((prev) => (prev + 1) % tokens.length);
+      }
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [isPlaying, tokens.length]);
@@ -98,9 +97,9 @@ export const AttentionVisualizer: React.FC = () => {
     setIsPlaying(false);
     setTemperature(val);
     if (val < 0.8) {
-      oneeBridge.emit('slider_change', `“Low temp (T=${val.toFixed(1)}) sharpens attention onto the highest scoring tokens!”`);
+      oneeBridge.emit('slider_change', `“Low temp (T=${val.toFixed(1)}) sharpens attention onto highest scoring tokens!”`);
     } else if (val > 1.4) {
-      oneeBridge.emit('slider_change', `“High temp (T=${val.toFixed(1)}) flattens the softmax distribution across all tokens!”`);
+      oneeBridge.emit('slider_change', `“High temp (T=${val.toFixed(1)}) flattens softmax distribution across all tokens!”`);
     }
   };
 
@@ -115,11 +114,9 @@ export const AttentionVisualizer: React.FC = () => {
   });
 
   return (
-    <div
-      className="w-full h-full min-h-[220px] p-4 sm:p-5 rounded-3xl backdrop-blur-2xl bg-white/85 border border-white/60 shadow-apple-md flex flex-col justify-between font-sans overflow-hidden"
-    >
-      {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-2.5 gap-2 shrink-0">
+    <div className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-4 sm:p-5 flex flex-col gap-3 font-sans gpu-layer">
+      {/* Header & Controls Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-2.5 gap-2">
         <div>
           <h3 className="text-sm font-bold text-apple-text font-mono flex items-center gap-2">
             <span>Scaled Dot-Product Attention Lab</span>
@@ -134,7 +131,6 @@ export const AttentionVisualizer: React.FC = () => {
 
         {/* Auto-Play & Scaling Controls */}
         <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
-          {/* Auto-Play Sweep Button */}
           <button
             onClick={toggleAutoPlay}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold transition-all shadow-apple-xs ${
@@ -147,7 +143,7 @@ export const AttentionVisualizer: React.FC = () => {
             <span>{isPlaying ? 'Auto-Sweep Active' : 'Play Auto-Sweep'}</span>
           </button>
 
-          <label className="flex items-center gap-1.5 cursor-pointer select-none ml-1">
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={useScalingFactor}
@@ -161,110 +157,106 @@ export const AttentionVisualizer: React.FC = () => {
         </div>
       </div>
 
-      {/* Interactive Tokens Stream with Active Auto-Sweep Highlight */}
-      <div className="my-auto py-2 space-y-3">
-        <div className="flex flex-wrap items-center justify-center gap-1.5">
-          {tokens.map((token, idx) => {
-            const isSelected = idx === selectedTokenIndex;
-            const weight = processedWeights[idx];
-            const isTopTarget = !isSelected && idx === maxTargetIdx;
+      {/* Interactive Tokens Matrix Stream */}
+      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 py-1">
+        {tokens.map((token, idx) => {
+          const isSelected = idx === selectedTokenIndex;
+          const isTopTarget = !isSelected && idx === maxTargetIdx;
+
+          return (
+            <motion.button
+              key={idx}
+              onClick={() => handleSelectToken(idx)}
+              whileHover={{ scale: 1.06 }}
+              whileTap={{ scale: 0.95 }}
+              animate={{
+                scale: isSelected ? 1.05 : 1,
+                borderColor: isSelected ? '#0071e3' : isTopTarget ? '#93c5fd' : 'rgba(0,0,0,0.08)'
+              }}
+              transition={{ duration: 0.2 }}
+              className={`relative px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-mono transition-all border ${
+                isSelected
+                  ? 'bg-apple-blue text-white font-bold shadow-apple-md z-10'
+                  : isTopTarget
+                  ? 'bg-blue-50/90 text-apple-blue font-bold border-blue-200 shadow-apple-xs'
+                  : 'bg-slate-50 border-black/5 text-apple-text hover:bg-black/5'
+              }`}
+            >
+              {token}
+              {isTopTarget && !isSelected && (
+                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+                </span>
+              )}
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* Dynamic Attention Weight Visualization Card */}
+      <div className="p-3 rounded-2xl bg-slate-50 border border-black/5 space-y-2 shadow-apple-xs">
+        <div className="flex items-center justify-between text-xs font-mono flex-wrap gap-1">
+          <div className="flex items-center gap-2">
+            <span className="text-apple-secondary text-[11px]">
+              Query Token <span className="font-bold text-apple-text">q_{selectedTokenIndex}</span>:
+            </span>
+            <span className="px-2 py-0.5 rounded-lg bg-apple-blue text-white font-bold text-[11px] shadow-apple-xs">
+              "{tokens[selectedTokenIndex]}"
+            </span>
+          </div>
+          <span className="text-apple-tertiary text-[10px]">
+            {useScalingFactor ? 'Scaled by √64 = 8 ➔ Stable Softmax' : 'Unscaled ➔ Extreme Vanishing Gradients'}
+          </span>
+        </div>
+
+        {/* Bar Chart Viewport */}
+        <div className="grid grid-cols-11 gap-1 h-8 sm:h-9 items-end pt-1">
+          {processedWeights.map((w, idx) => {
+            const isQuery = idx === selectedTokenIndex;
+            const isTop = idx === maxTargetIdx;
 
             return (
-              <motion.button
-                key={idx}
-                onClick={() => {
-                  handleSelectToken(idx);
-                }}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.95 }}
-                animate={{
-                  scale: isSelected ? 1.05 : 1,
-                  borderColor: isSelected ? '#0071e3' : isTopTarget ? '#93c5fd' : 'rgba(0,0,0,0.06)'
-                }}
-                transition={{ duration: 0.25 }}
-                className={`relative px-3 py-1.5 rounded-xl text-xs font-mono transition-all border ${
-                  isSelected
-                    ? 'bg-apple-blue text-white font-bold shadow-apple-md z-10'
-                    : isTopTarget
-                    ? 'bg-blue-50/80 text-apple-blue font-bold border-blue-200 shadow-apple-xs'
-                    : 'bg-slate-50 border-black/5 text-apple-text hover:bg-black/5'
-                }`}
-              >
-                {token}
-                {isTopTarget && !isSelected && (
-                  <span className="absolute -top-1.5 -right-1 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
-                  </span>
-                )}
-              </motion.button>
+              <div key={idx} className="flex flex-col items-center gap-0.5 h-full justify-end min-w-0">
+                <motion.div
+                  animate={{ height: `${Math.max(8, w * 100)}%` }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  className={`w-full rounded-t ${
+                    isQuery
+                      ? 'bg-apple-blue shadow-apple-xs'
+                      : isTop
+                      ? 'bg-blue-400'
+                      : 'bg-blue-200/90'
+                  }`}
+                  title={`${tokens[idx]}: ${(w * 100).toFixed(0)}%`}
+                />
+              </div>
             );
           })}
         </div>
 
-        {/* Dynamic Attention Weight Visualization Bar */}
-        <div className="p-3 rounded-2xl bg-slate-50 border border-black/5 space-y-2 shadow-apple-xs">
-          <div className="flex items-center justify-between text-xs font-mono flex-wrap gap-1">
-            <div className="flex items-center gap-2">
-              <span className="text-apple-secondary text-[11px]">
-                Query Token <span className="font-bold text-apple-text">q_{selectedTokenIndex}</span>:
-              </span>
-              <span className="px-2 py-0.5 rounded-lg bg-apple-blue text-white font-bold text-[11px] shadow-apple-xs">
-                "{tokens[selectedTokenIndex]}"
-              </span>
-            </div>
-            <span className="text-apple-tertiary text-[10px]">
-              {useScalingFactor ? 'Scaled by √64 = 8 ➔ Stable Softmax' : 'Unscaled ➔ Extreme Vanishing Gradients'}
+        {/* Token Sub-labels */}
+        <div className="grid grid-cols-11 gap-0.5 text-[8px] sm:text-[9px] font-mono text-center text-apple-tertiary">
+          {tokens.map((t, idx) => (
+            <span
+              key={idx}
+              className={`truncate ${
+                idx === selectedTokenIndex
+                  ? 'text-apple-blue font-bold'
+                  : idx === maxTargetIdx
+                  ? 'text-blue-600 font-semibold'
+                  : ''
+              }`}
+            >
+              {t}
             </span>
-          </div>
-
-          <div className="grid grid-cols-11 gap-1 h-7 items-end">
-            {processedWeights.map((w, idx) => {
-              const isQuery = idx === selectedTokenIndex;
-              const isTop = idx === maxTargetIdx;
-
-              return (
-                <div key={idx} className="flex flex-col items-center gap-0.5 h-full justify-end">
-                  <motion.div
-                    animate={{ height: `${w * 100}%` }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                    className={`w-full rounded-t ${
-                      isQuery
-                        ? 'bg-apple-blue shadow-apple-xs'
-                        : isTop
-                        ? 'bg-blue-400'
-                        : 'bg-blue-200/90'
-                    }`}
-                    title={`${tokens[idx]}: ${(w * 100).toFixed(0)}%`}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Token Sub-labels */}
-          <div className="grid grid-cols-11 gap-1 text-[9px] font-mono text-center text-apple-tertiary">
-            {tokens.map((t, idx) => (
-              <span
-                key={idx}
-                className={`truncate ${
-                  idx === selectedTokenIndex
-                    ? 'text-apple-blue font-bold'
-                    : idx === maxTargetIdx
-                    ? 'text-blue-600 font-semibold'
-                    : ''
-                }`}
-              >
-                {t}
-              </span>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
 
       {/* Temperature & Coreference Footer */}
-      <div className="border-t border-black/5 pt-2 flex flex-col sm:flex-row items-center justify-between gap-1.5 text-xs font-mono shrink-0">
-        <div className="flex items-center gap-2 w-full sm:w-auto text-[11px]">
+      <div className="border-t border-black/5 pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-mono">
+        <div className="flex items-center gap-2 text-[11px] shrink-0">
           <span className="text-apple-secondary">Temp (T): <strong>{temperature.toFixed(1)}</strong></span>
           <input
             type="range"
@@ -276,10 +268,10 @@ export const AttentionVisualizer: React.FC = () => {
             className="accent-apple-blue bg-black/10 rounded-lg cursor-pointer h-1.5 w-24"
           />
         </div>
-        <div className="flex items-center gap-1.5 text-apple-blue font-bold text-[11px]">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>
-            Primary Attention: "{tokens[selectedTokenIndex]}" ➔ "{tokens[maxTargetIdx]}" ({(processedWeights[maxTargetIdx] * 100).toFixed(0)}%)
+        <div className="flex items-center gap-1.5 text-apple-blue font-bold text-[10px] sm:text-[11px] truncate">
+          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">
+            Primary: "{tokens[selectedTokenIndex]}" ➔ "{tokens[maxTargetIdx]}" ({(processedWeights[maxTargetIdx] * 100).toFixed(0)}%)
           </span>
         </div>
       </div>

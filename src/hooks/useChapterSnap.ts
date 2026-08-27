@@ -75,61 +75,33 @@ export function useChapterSnap(sectionIds: string[], initialIndex = 0) {
       if (isModalOpen) return;
 
       const target = e.target as HTMLElement | null;
-      if (['input', 'textarea', 'select'].includes(target?.tagName?.toLowerCase() || '')) {
+      if (!target) return;
+
+      if (['input', 'textarea', 'select'].includes(target.tagName.toLowerCase())) {
         return;
       }
 
-      // Check if user is scrolling inside an internal scrollable container
-      let ancestor: HTMLElement | null = target;
-      let hasInnerScroll = false;
-      while (ancestor && ancestor !== document.body && ancestor !== document.documentElement) {
-        // Check if ancestor is explicitly a scrollable container with remaining scroll capacity
-        const isScrollableClass =
-          ancestor.classList.contains('allow-inner-scroll') ||
-          ancestor.classList.contains('overflow-y-auto') ||
-          ancestor.classList.contains('overflow-auto') ||
-          ancestor.classList.contains('no-scrollbar') ||
-          ancestor.tagName.toLowerCase() === 'pre';
+      // Check if user is scrolling inside an internal scrollable container via fast O(1) selector
+      const scrollableContainer = target.closest<HTMLElement>(
+        '.allow-inner-scroll, .overflow-y-auto, .overflow-auto, .no-scrollbar, pre, [data-scrollable="true"]'
+      );
 
-        if (isScrollableClass) {
-          const { scrollTop, scrollHeight, clientHeight } = ancestor;
-          if (scrollHeight > clientHeight + 4) {
-            const canScrollDown = e.deltaY > 0 && scrollTop + clientHeight < scrollHeight - 3;
-            const canScrollUp = e.deltaY < 0 && scrollTop > 3;
-            if (canScrollDown || canScrollUp) {
-              hasInnerScroll = true;
-              break;
-            }
-          }
-        } else {
-          // Check computed overflow styling
-          try {
-            const style = window.getComputedStyle(ancestor);
-            if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
-              const { scrollTop, scrollHeight, clientHeight } = ancestor;
-              if (scrollHeight > clientHeight + 4) {
-                const canScrollDown = e.deltaY > 0 && scrollTop + clientHeight < scrollHeight - 3;
-                const canScrollUp = e.deltaY < 0 && scrollTop > 3;
-                if (canScrollDown || canScrollUp) {
-                  hasInnerScroll = true;
-                  break;
-                }
-              }
-            }
-          } catch {
-            // ignore
+      if (scrollableContainer && scrollableContainer !== document.body && scrollableContainer !== document.documentElement) {
+        const { scrollTop, scrollHeight, clientHeight } = scrollableContainer;
+        if (scrollHeight > clientHeight + 4) {
+          const canScrollDown = e.deltaY > 0 && scrollTop + clientHeight < scrollHeight - 3;
+          const canScrollUp = e.deltaY < 0 && scrollTop > 3;
+          if (canScrollDown || canScrollUp) {
+            return;
           }
         }
-
-        ancestor = ancestor.parentElement;
       }
-      if (hasInnerScroll) return;
 
       const now = Date.now();
 
-      // If within cooldown period, consume event to swallow trackpad inertia
+      // If within cooldown period, swallow trackpad inertia
       if (now - lastTriggerTimeRef.current < SCROLL_COOLDOWN_MS || isLockedRef.current) {
-        e.preventDefault();
+        if (e.cancelable) e.preventDefault();
         deltaAccRef.current = 0;
         return;
       }
@@ -143,7 +115,7 @@ export function useChapterSnap(sectionIds: string[], initialIndex = 0) {
 
       // Check if accumulated delta exceeds threshold
       if (Math.abs(deltaAccRef.current) >= SCROLL_THRESHOLD_PX) {
-        e.preventDefault();
+        if (e.cancelable) e.preventDefault();
         lastTriggerTimeRef.current = now;
         isLockedRef.current = true;
 

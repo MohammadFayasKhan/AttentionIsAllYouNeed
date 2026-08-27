@@ -96,13 +96,29 @@ export const AvatarController = forwardRef<AvatarRefHandle, AvatarControllerProp
       return 'idle';
     };
 
-    // Initialize Avatar instance once on mount
+    // Initialize Avatar instance once on mount with visibility culling
     useEffect(() => {
       const container = containerRef.current;
       if (!container) return;
 
       container.innerHTML = '';
       setInitError(null);
+
+      let isVisible = true;
+      let isTabActive = document.visibilityState === 'visible';
+
+      const syncPlayback = () => {
+        if (!instanceRef.current) return;
+        if (!isVisible || !isTabActive) {
+          try {
+            instanceRef.current.stop();
+          } catch (e) {}
+        } else {
+          try {
+            instanceRef.current.play(activeAnimRef.current || 'idle');
+          } catch (e) {}
+        }
+      };
 
       try {
         const initialAnim = getSafeAnimation(animation);
@@ -148,7 +164,25 @@ export const AvatarController = forwardRef<AvatarRefHandle, AvatarControllerProp
         setInitError(err?.message || 'Avatar init failed');
       }
 
+      // Intersection Observer for viewport visibility culling
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          isVisible = entry.isIntersecting;
+          syncPlayback();
+        },
+        { threshold: 0.05 }
+      );
+      observer.observe(container);
+
+      const handleVisibilityChange = () => {
+        isTabActive = document.visibilityState === 'visible';
+        syncPlayback();
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
       return () => {
+        observer.disconnect();
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
         if (autoIdleTimerRef.current) clearTimeout(autoIdleTimerRef.current);
         if (instanceRef.current) {
           try {

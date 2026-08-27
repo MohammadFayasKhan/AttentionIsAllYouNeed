@@ -426,13 +426,16 @@ export const ParticleText: React.FC<ParticleTextProps> = ({
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
     let animFrame: number | null = null;
     let dots: Dot[] = [];
     let startTime = performance.now();
-    let reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    let isVisible = true;
+    let cachedWidth = 400;
+    let cachedHeight = 160;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
     const pointer = {
       x: -1000,
@@ -446,6 +449,9 @@ export const ParticleText: React.FC<ParticleTextProps> = ({
       const width = rect.width;
       const height = rect.height;
       if (width <= 0 || height <= 0) return;
+
+      cachedWidth = width;
+      cachedHeight = height;
 
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.floor(width * dpr);
@@ -469,11 +475,11 @@ export const ParticleText: React.FC<ParticleTextProps> = ({
         for (let i = 0; i < lineStr.length; i++) {
           const char = lineStr[i];
           if (char === ' ') {
-            cols += 3; // Word space = 3 columns
+            cols += 3;
           } else {
-            cols += 5; // Glyph = 5 columns
+            cols += 5;
             if (i < lineStr.length - 1 && lineStr[i + 1] !== ' ') {
-              cols += 1; // Letter space = 1 column
+              cols += 1;
             }
           }
         }
@@ -481,9 +487,8 @@ export const ParticleText: React.FC<ParticleTextProps> = ({
         return { text: lineStr, cols };
       });
 
-      const totalRows = lines.length * 7 + (lines.length - 1) * 3; // 7 rows per glyph + 3 rows line gap
+      const totalRows = lines.length * 7 + (lines.length - 1) * 3;
 
-      // Compute responsive pitch and radius ensuring zero horizontal overflow
       const maxAvailableWidth = width * 0.88;
       const maxAvailableHeight = height * 0.76;
 
@@ -520,19 +525,16 @@ export const ParticleText: React.FC<ParticleTextProps> = ({
           for (let row = 0; row < 7; row++) {
             const rowBits = glyph[row];
             for (let col = 0; col < 5; col++) {
-              // Read bit at position (4 - col)
               const bit = (rowBits >> (4 - col)) & 1;
               if (bit === 1) {
                 const targetX = curX + col * pitch + pitch / 2;
                 const targetY = curY + row * pitch + pitch / 2;
 
-                // Scatter origin from geometric burst
                 const angle = (globalDotIndex * 0.38) * Math.PI * 2;
                 const dist = 70 + (globalDotIndex % 30) * 3;
                 const startX = targetX + Math.cos(angle) * dist;
                 const startY = targetY + Math.sin(angle) * dist;
 
-                // Subtle gradient hue shift from Apple Blue to Deep Slate across text
                 const xProgress = targetX / width;
                 const dotColor = xProgress < 0.35 ? highlightColor : color;
 
@@ -567,34 +569,36 @@ export const ParticleText: React.FC<ParticleTextProps> = ({
       startTime = performance.now();
     };
 
-    // Animation Loop
+    // Animation Loop with Cached Dimensions
     const render = (now: number) => {
-      const rect = container.getBoundingClientRect();
-      ctx.clearRect(0, 0, rect.width, rect.height);
+      if (!isVisible || document.visibilityState === 'hidden') {
+        animFrame = requestAnimationFrame(render);
+        return;
+      }
+
+      ctx.clearRect(0, 0, cachedWidth, cachedHeight);
 
       const elapsed = now - startTime;
-      const assembleDuration = 900; // ms
+      const assembleDuration = 800;
 
-      dots.forEach((dot) => {
+      for (let i = 0; i < dots.length; i++) {
+        const dot = dots[i];
         let posX = dot.targetX;
         let posY = dot.targetY;
         let opacity = 1;
 
-        if (!reducedMotion && elapsed < assembleDuration + 400) {
-          // Staggered cascade entrance from left to right
-          const staggerOffset = (dot.targetX / (rect.width || 1)) * 300;
+        if (!reducedMotion && elapsed < assembleDuration + 300) {
+          const staggerOffset = (dot.targetX / (cachedWidth || 1)) * 250;
           const progress = Math.max(0, Math.min(1, (elapsed - staggerOffset) / assembleDuration));
 
-          // Smooth cubic bezier easing
           const ease = 1 - Math.pow(1 - progress, 3);
           posX = dot.startX + (dot.targetX - dot.startX) * ease;
           posY = dot.startY + (dot.targetY - dot.startY) * ease;
           opacity = Math.max(0.2, progress);
         } else {
-          // Subtle rhythmic ambient wave shimmer across the dot matrix
-          const shimmerWave = Math.sin(now * 0.0025 - dot.targetX * 0.015);
-          if (shimmerWave > 0.8) {
-            opacity = 0.85 + (shimmerWave - 0.8) * 0.75;
+          const shimmerWave = Math.sin(now * 0.002 - dot.targetX * 0.012);
+          if (shimmerWave > 0.85) {
+            opacity = 0.85 + (shimmerWave - 0.85) * 0.7;
           }
         }
 
@@ -603,26 +607,24 @@ export const ParticleText: React.FC<ParticleTextProps> = ({
           const dx = posX - pointer.x;
           const dy = posY - pointer.y;
           const dist = Math.hypot(dx, dy);
-          const repelRadius = 75;
+          const repelRadius = 70;
 
           if (dist < repelRadius && dist > 0) {
-            const force = (1 - dist / repelRadius) * 16;
+            const force = (1 - dist / repelRadius) * 14;
             posX += (dx / dist) * force;
             posY += (dy / dist) * force;
           }
         }
 
-        // Smooth follow
         dot.currentX += (posX - dot.currentX) * 0.35;
         dot.currentY += (posY - dot.currentY) * 0.35;
 
-        // Draw crystal-clear circular dot
         ctx.globalAlpha = opacity;
         ctx.fillStyle = dot.baseColor;
         ctx.beginPath();
         ctx.arc(dot.currentX, dot.currentY, dot.radius, 0, Math.PI * 2);
         ctx.fill();
-      });
+      }
 
       ctx.globalAlpha = 1;
       animFrame = requestAnimationFrame(render);
@@ -641,19 +643,36 @@ export const ParticleText: React.FC<ParticleTextProps> = ({
       pointer.y = -1000;
     };
 
-    canvas.addEventListener('pointermove', handlePointerMove);
-    canvas.addEventListener('pointerleave', handlePointerLeave);
+    canvas.addEventListener('pointermove', handlePointerMove, { passive: true });
+    canvas.addEventListener('pointerleave', handlePointerLeave, { passive: true });
 
     const resizeObserver = new ResizeObserver(() => {
       buildDots();
     });
     resizeObserver.observe(container);
 
+    const intersectionObserver = new IntersectionObserver(([entry]) => {
+      isVisible = entry.isIntersecting;
+    }, { threshold: 0.05 });
+    intersectionObserver.observe(container);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        isVisible = false;
+      } else {
+        isVisible = true;
+        startTime = performance.now();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     buildDots();
     animFrame = requestAnimationFrame(render);
 
     return () => {
       resizeObserver.disconnect();
+      intersectionObserver.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibility);
       canvas.removeEventListener('pointermove', handlePointerMove);
       canvas.removeEventListener('pointerleave', handlePointerLeave);
       if (animFrame) cancelAnimationFrame(animFrame);
@@ -663,7 +682,7 @@ export const ParticleText: React.FC<ParticleTextProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full min-h-[160px] sm:min-h-[200px] flex items-center justify-center overflow-hidden select-none isolate ${className}`}
+      className={`relative w-full h-full min-h-[160px] sm:min-h-[200px] flex items-center justify-center overflow-hidden select-none isolate gpu-layer ${className}`}
       style={style}
       aria-label={text}
     >

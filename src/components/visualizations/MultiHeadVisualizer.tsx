@@ -2,121 +2,104 @@
  * MultiHeadVisualizer.tsx
  * --------------------------------------------------------------------------------
  * Architecture Overview:
- * Interactive simulation of Multi-Head Attention:
- *   MultiHead(Q, K, V) = Concat(head_1, ..., head_h) W^O
- *   where head_i = Attention(Q W_i^Q, K W_i^K, V W_i^V)
+ * Interactive Subspace Explorer for Multi-Head Attention (Vaswani et al. 2017, Section 3.2.2, Eq. 2):
+ *   MultiHead(Q,K,V) = Concat(head_1, ..., head_h)W^O
  *
- * Features:
- *   1. Smooth Auto-Play Head Sweep:
- *      Continuously sweeps across the 8 parallel representation subspaces (H1..H8)
- *      every 1.9s, demonstrating how different heads specialize simultaneously.
- *   2. Dedicated Representation Subspaces:
- *      Highlights specific linguistic and structural roles observed in Section 3.2.2:
- *      syntactic dependencies, anaphora resolution ("it" -> "animal"), modifier scoping, etc.
- *   3. Token Connection Visualizer:
- *      Interactive visual flow showing the primary query-key token connection for each head.
- *   4. Hyperparameter Ablation Slider:
- *      Adjust head count $h \in [1, 32]$ with real Table 3 BLEU benchmark annotations.
+ * Responsive & Layout Optimizations:
+ *   - Auto-height `w-full h-auto` with clean flex gap spacing.
+ *   - Heads grid adapts smoothly across 4-column (mobile) and 8-column (tablet/desktop) configurations.
  */
 
 import React, { useState, useEffect } from 'react';
 import { oneeBridge } from '../../lib/oneeEvents';
 import { motion } from 'framer-motion';
-import { Play, Pause, Eye, Sparkles, Layers } from 'lucide-react';
+import { Layers, Play, Pause, Sparkles, Eye } from 'lucide-react';
 
 interface HeadRole {
+  id: number;
   name: string;
   focus: string;
   tokens: [string, string];
-  relation: string;
-  weight: number;
   color: string;
   bgLight: string;
   borderLight: string;
 }
 
 export const MultiHeadVisualizer: React.FC = () => {
-  const [headCount, setHeadCount] = useState<number>(8);
   const [activeHeadIndex, setActiveHeadIndex] = useState<number>(0);
+  const [headCount, setHeadCount] = useState<number>(8); // Baseline h=8 as per Section 3.2.2
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
 
+  // Concrete subspace role specializations observed in the 8-head model
   const headRoles: HeadRole[] = [
     {
-      name: "Head 1: Syntactic Dependencies",
-      focus: "Subject ➔ Verb relationships",
+      id: 1,
+      name: "Head 1: Syntactic Subject-Verb",
+      focus: "Direct syntactic linkages between subjects and action verbs",
       tokens: ["animal", "cross"],
-      relation: "Subject ➔ Action Predicate",
-      weight: 0.88,
       color: "text-blue-600",
       bgLight: "bg-blue-50/80",
       borderLight: "border-blue-200"
     },
     {
-      name: "Head 2: Anaphora Coreference",
-      focus: "Pronoun ➔ Antecedent resolution ('it' ➔ 'animal')",
+      id: 2,
+      name: "Head 2: Coreference & Pronoun Resolution",
+      focus: "Resolving ambiguous pronouns to their semantic antecedents",
       tokens: ["it", "animal"],
-      relation: "Coreference Link (Vaswani Figure 3)",
-      weight: 0.94,
-      color: "text-purple-600",
-      bgLight: "bg-purple-50/80",
-      borderLight: "border-purple-200"
-    },
-    {
-      name: "Head 3: Positional Proximity",
-      focus: "Local bi-gram & adjacent token context",
-      tokens: ["didn't", "cross"],
-      relation: "Local Negation Modifier",
-      weight: 0.82,
-      color: "text-emerald-600",
-      bgLight: "bg-emerald-50/80",
-      borderLight: "border-emerald-200"
-    },
-    {
-      name: "Head 4: Semantic Spatial Context",
-      focus: "Scene & entity interaction ('street' ➔ 'cross')",
-      tokens: ["street", "cross"],
-      relation: "Direct Object / Location",
-      weight: 0.76,
-      color: "text-amber-600",
-      bgLight: "bg-amber-50/80",
-      borderLight: "border-amber-200"
-    },
-    {
-      name: "Head 5: Clause Boundaries & Logic",
-      focus: "Causal conjunctions & subordinate clauses",
-      tokens: ["because", "tired"],
-      relation: "Causal Explanation Link",
-      weight: 0.79,
       color: "text-indigo-600",
       bgLight: "bg-indigo-50/80",
       borderLight: "border-indigo-200"
     },
     {
-      name: "Head 6: Modifier Scoping",
-      focus: "Adjective ➔ Subject attribute ('tired' ➔ 'animal')",
-      tokens: ["tired", "animal"],
-      relation: "Attribute State Linking",
-      weight: 0.85,
+      id: 3,
+      name: "Head 3: Causal & Subordinate Clauses",
+      focus: "Connecting clauses across causal conjunctions ('because')",
+      tokens: ["cross", "tired"],
+      color: "text-purple-600",
+      bgLight: "bg-purple-50/80",
+      borderLight: "border-purple-200"
+    },
+    {
+      id: 4,
+      name: "Head 4: Spatial & Prepositional Relations",
+      focus: "Grounding entities to their spatial targets ('street')",
+      tokens: ["cross", "street"],
+      color: "text-emerald-600",
+      bgLight: "bg-emerald-50/80",
+      borderLight: "border-emerald-200"
+    },
+    {
+      id: 5,
+      name: "Head 5: Negation & Polarity Scoping",
+      focus: "Tracking negation scope and logical modifiers ('didn't')",
+      tokens: ["didn't", "cross"],
       color: "text-rose-600",
       bgLight: "bg-rose-50/80",
       borderLight: "border-rose-200"
     },
     {
-      name: "Head 7: Long-Range Dependencies",
-      focus: "Global sentence span & distant constraints",
-      tokens: ["The", "tired"],
-      relation: "Span Boundary Context",
-      weight: 0.68,
+      id: 6,
+      name: "Head 6: Positional Adjacency & Bi-grams",
+      focus: "Attending to immediate local linear neighbors",
+      tokens: ["The", "animal"],
+      color: "text-amber-600",
+      bgLight: "bg-amber-50/80",
+      borderLight: "border-amber-200"
+    },
+    {
+      id: 7,
+      name: "Head 7: Long-Range State Dependencies",
+      focus: "Linking sentence-level causes to final emotional/physical states",
+      tokens: ["animal", "tired"],
       color: "text-cyan-600",
       bgLight: "bg-cyan-50/80",
       borderLight: "border-cyan-200"
     },
     {
-      name: "Head 8: Global Representation",
-      focus: "Broad semantic pooling across all d_model dimensions",
-      tokens: ["animal", "street"],
-      relation: "Global Subspace Context",
-      weight: 0.72,
+      id: 8,
+      name: "Head 8: Global Discourse & Sentence Boundaries",
+      focus: "Maintaining broad context distribution across all positions",
+      tokens: ["street", "because"],
       color: "text-teal-600",
       bgLight: "bg-teal-50/80",
       borderLight: "border-teal-200"
@@ -126,12 +109,14 @@ export const MultiHeadVisualizer: React.FC = () => {
   const currentHead = headRoles[activeHeadIndex % headRoles.length];
   const d_k = Math.floor(512 / headCount);
 
-  // Auto-play sweep interval
+  // Auto-play sweep interval with tab visibility awareness
   useEffect(() => {
     if (!isPlaying) return;
 
     const interval = setInterval(() => {
-      setActiveHeadIndex((prev) => (prev + 1) % headCount);
+      if (document.visibilityState === 'visible') {
+        setActiveHeadIndex((prev) => (prev + 1) % headCount);
+      }
     }, 1900);
 
     return () => clearInterval(interval);
@@ -149,11 +134,9 @@ export const MultiHeadVisualizer: React.FC = () => {
   };
 
   return (
-    <div
-      className="w-full h-full min-h-[220px] p-4 sm:p-5 rounded-3xl backdrop-blur-2xl bg-white/85 border border-white/60 shadow-apple-md flex flex-col justify-between font-sans overflow-hidden"
-    >
+    <div className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-4 sm:p-5 flex flex-col gap-3 font-sans gpu-layer">
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-2.5 gap-2 shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-2.5 gap-2">
         <div>
           <h3 className="text-sm font-bold text-apple-text font-mono flex items-center gap-2">
             <span>Multi-Head Attention Subspace Explorer</span>
@@ -167,7 +150,6 @@ export const MultiHeadVisualizer: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
-          {/* Auto-Play Sweep Button */}
           <button
             onClick={toggleAutoPlay}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold transition-all shadow-apple-xs ${
@@ -188,22 +170,19 @@ export const MultiHeadVisualizer: React.FC = () => {
       </div>
 
       {/* Interactive Heads Matrix Stream */}
-      <div className="my-auto py-2 space-y-3">
+      <div className="space-y-2.5">
         <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
           {Array.from({ length: headCount }).map((_, idx) => {
             const isSelected = idx === activeHeadIndex;
-            const role = headRoles[idx % headRoles.length];
 
             return (
               <motion.button
                 key={idx}
-                onClick={() => {
-                  handleSelectHead(idx);
-                }}
-                whileHover={{ scale: 1.08 }}
+                onClick={() => handleSelectHead(idx)}
+                whileHover={{ scale: 1.06 }}
                 whileTap={{ scale: 0.94 }}
                 animate={{
-                  scale: isSelected ? 1.05 : 1
+                  scale: isSelected ? 1.04 : 1
                 }}
                 transition={{ duration: 0.2 }}
                 className={`py-2 px-1.5 rounded-2xl text-xs font-mono font-bold transition-all border text-center relative ${
@@ -214,7 +193,7 @@ export const MultiHeadVisualizer: React.FC = () => {
               >
                 H{idx + 1}
                 {isSelected && (
-                  <span className="absolute -top-1.5 -right-1 flex h-2 w-2">
+                  <span className="absolute -top-1 -right-0.5 flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
                   </span>
@@ -225,13 +204,7 @@ export const MultiHeadVisualizer: React.FC = () => {
         </div>
 
         {/* Selected Head Subspace Details Card */}
-        <motion.div
-          key={activeHeadIndex}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-          className={`p-3 rounded-2xl ${currentHead.bgLight} border ${currentHead.borderLight} space-y-2 shadow-apple-xs font-mono text-xs`}
-        >
+        <div className={`p-3 rounded-2xl ${currentHead.bgLight} border ${currentHead.borderLight} space-y-2 shadow-apple-xs font-mono text-xs`}>
           <div className="flex items-center justify-between flex-wrap gap-1">
             <div className="flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-apple-blue" />
@@ -260,11 +233,11 @@ export const MultiHeadVisualizer: React.FC = () => {
               </span>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Head Count Interactive Slider & Baseline Annotation Footer */}
-      <div className="border-t border-black/5 pt-2 flex flex-col sm:flex-row items-center justify-between gap-1.5 text-xs font-mono shrink-0">
+      <div className="border-t border-black/5 pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 text-xs font-mono">
         <div className="flex items-center gap-2 w-full sm:w-auto text-[11px]">
           <span className="text-apple-secondary">Heads (h): <strong>{headCount}</strong></span>
           <input

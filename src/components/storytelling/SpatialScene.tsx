@@ -5,10 +5,19 @@
  * SpatialScene is the central responsive stage that renders each chapter of
  * "Attention Is All You Need".
  *
- * Markdown & Mathematical Typesetting:
- *   - Subtitle, Narrative Body, and Key Takeaway are all rendered through `MarkdownRenderer`
- *     so LaTeX mathematical formulas ($...$, $$...$$, \omega_i, etc.) and bold formatting
- *     are rendered cleanly as beautiful KaTeX math rather than raw unparsed strings.
+ * Responsive Document Flow & Formatting:
+ *   1. Natural Vertical Flow Hierarchy:
+ *      - Header (Chapter number, eyebrow, title, subtitle).
+ *      - Interactive Visualizer Engine (Natural auto-height, responsive wrapping).
+ *      - Detailed Narrative Body (KaTeX math & formatted paragraphs).
+ *      - Key Takeaway Highlight Card.
+ *      - Academic Source Citation Footer.
+ *   2. Zero Overlap & Natural Inner Scrolling:
+ *      All content cards and text flow seamlessly with generous vertical margins and
+ *      isolated internal scrolling (`allow-inner-scroll`), preventing layout clipping.
+ *   3. Multi-Breakpoint Responsive Design:
+ *      Smoothly scales across mobile (320px-480px), tablet (768px-1023px), desktop (1024px+),
+ *      and ultrawide displays.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -29,7 +38,6 @@ import { DeveloperCard } from '../common/DeveloperCard';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
 import { oneeBridge, OneeReaction } from '../../lib/oneeEvents';
 import { AnimationKey, AvatarRefHandle } from '../../types/avatar';
-import { motion } from 'framer-motion';
 import { BookOpen, Tag, Sparkles, MessageSquare, Layers, HelpCircle, Book } from 'lucide-react';
 
 interface SpatialSceneProps {
@@ -121,12 +129,12 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
     onOpenCompanion('chat');
   };
 
-  // Mount corresponding interactive visualizer engine
+  // Mount corresponding interactive visualizer engine with robust responsive wrappers
   const renderVisualizer = () => {
     switch (chapter.id) {
       case 'story-hook':
         return (
-          <div className="w-full h-full min-h-[180px] sm:min-h-[220px] rounded-3xl bg-white border border-black/5 shadow-apple-md flex flex-col items-center justify-center p-5 text-center">
+          <div className="w-full rounded-3xl bg-white border border-black/10 shadow-apple-md flex flex-col items-center justify-center p-4 sm:p-6 text-center">
             <ParticleText
               text="ATTENTION IS ALL YOU NEED"
               color="#1d1d1f"
@@ -154,11 +162,15 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
       case 'story-variations':
         return <ModelVariationLab />;
       case 'story-notebook':
-        return <Sketchbook />;
+        return (
+          <div className="w-full min-h-[420px]">
+            <Sketchbook />
+          </div>
+        );
       case 'story-conclusion':
         return (
-          <div className="w-full h-full min-h-[200px] rounded-3xl bg-white border border-black/5 shadow-apple-md flex flex-col items-center justify-center p-5 text-center">
-            <div className="w-10 h-10 rounded-2xl bg-blue-100 text-apple-blue flex items-center justify-center font-bold text-base mb-2">
+          <div className="w-full rounded-3xl bg-white border border-black/10 shadow-apple-md flex flex-col items-center justify-center p-5 sm:p-6 text-center">
+            <div className="w-10 h-10 rounded-2xl bg-blue-100 text-apple-blue flex items-center justify-center font-bold text-base mb-2 shadow-apple-xs">
               ✨
             </div>
             <h4 className="text-sm font-extrabold text-apple-text font-mono mb-1">
@@ -168,7 +180,7 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
               By replacing recurrence with multi-head self-attention and positional encoding, Vaswani et al. paved the way for GPT, Claude, Gemini, and all modern foundation models.
             </p>
             {/* Developer Acknowledgement Card */}
-            <div className="w-full max-w-md pt-2 border-t border-black/5">
+            <div className="w-full max-w-md pt-3 border-t border-black/5">
               <DeveloperCard isCompact={true} />
             </div>
           </div>
@@ -181,52 +193,48 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
   const displayCaption = activeSpeechCaption || defaultCaption;
 
   return (
-    <div className="w-full h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-center overflow-hidden">
-      <div className="w-full h-full grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch overflow-hidden">
-        {/* Left Column: Narrative, Metadata & Interactive Visualization (8 Cols on LG) */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="col-span-1 lg:col-span-8 min-w-0 flex flex-col justify-between h-full bg-white/75 rounded-3xl border border-white/60 p-5 sm:p-6 shadow-apple-md backdrop-blur-2xl overflow-y-auto no-scrollbar"
+    <div className="w-full h-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3 flex items-center justify-center overflow-hidden">
+      <div className="w-full h-full grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5 items-stretch overflow-hidden">
+        {/* Left Column: Natural Reading Hierarchy in a Smooth Scrollable Viewport (8 Cols on LG) */}
+        <div
+          className="col-span-1 lg:col-span-8 min-w-0 h-full bg-white/85 rounded-3xl border border-black/5 p-4 sm:p-6 shadow-apple-md overflow-y-auto no-scrollbar allow-inner-scroll flex flex-col justify-between"
         >
-          {/* Top Eyebrow & Chapter Header */}
-          <div className="space-y-1.5 shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono font-bold text-apple-blue tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 flex items-center gap-1.5">
-                <Tag className="w-3 h-3" />
-                Chapter {chapter.chapterNumber} • {chapter.eyebrow}
-              </span>
-              <span className="text-[10px] font-mono text-apple-tertiary hidden sm:inline-block">
-                Vaswani et al. (2017)
-              </span>
+          {/* Natural Document Flow Container */}
+          <div className="space-y-4 min-w-0">
+            {/* 1. Header: Chapter Badge, Title & Subtitle */}
+            <div className="space-y-1.5 shrink-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-mono font-bold text-apple-blue tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 flex items-center gap-1.5">
+                  <Tag className="w-3 h-3" />
+                  Chapter {chapter.chapterNumber} • {chapter.eyebrow}
+                </span>
+                <span className="text-[10px] font-mono text-apple-tertiary">
+                  Vaswani et al. (2017)
+                </span>
+              </div>
+
+              <h2 className="text-lg sm:text-2xl font-bold text-apple-text tracking-tight font-mono break-words">
+                {chapter.title}
+              </h2>
+
+              {/* Subtitle with clean KaTeX math rendering */}
+              <div className="text-xs sm:text-sm text-apple-secondary font-medium leading-relaxed font-sans break-words">
+                <MarkdownRenderer content={activeSubtitle} />
+              </div>
             </div>
 
-            <h2 className="text-xl sm:text-2xl font-bold text-apple-text tracking-tight font-mono">
-              {chapter.title}
-            </h2>
-
-            {/* Subtitle rendered with MarkdownRenderer for clean KaTeX equations */}
-            <div className="text-xs sm:text-sm text-apple-secondary font-medium leading-relaxed font-sans">
-              <MarkdownRenderer content={activeSubtitle} />
-            </div>
-          </div>
-
-          {/* Center Interactive Visualization Canvas */}
-          <div className="my-3 flex-1 min-h-0 flex items-center justify-center overflow-hidden">
-            <div className="w-full h-full flex items-center justify-center min-h-0">
+            {/* 2. Interactive Visualizer Component Card (Natural Auto-Height) */}
+            <div className="w-full my-2 min-w-0">
               {renderVisualizer()}
             </div>
-          </div>
 
-          {/* Narrative Body & Key Takeaway */}
-          <div className="space-y-2 shrink-0 pt-2 border-t border-black/5">
-            {/* Narrative body rendered with MarkdownRenderer */}
-            <div className="text-xs text-apple-secondary leading-relaxed font-sans">
+            {/* 3. Detailed Narrative Body & Mathematical Explanations */}
+            <div className="pt-2 border-t border-black/5 text-xs text-apple-secondary leading-relaxed font-sans space-y-2.5 break-words">
               <MarkdownRenderer content={activeBody} />
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-50 border border-black/5 text-xs text-apple-text font-sans flex items-start gap-2.5 shadow-apple-xs">
+            {/* 4. Prominent Key Takeaway Card */}
+            <div className="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200/80 text-xs text-apple-text font-sans flex items-start gap-2.5 shadow-apple-xs">
               <div className="w-5 h-5 rounded-lg bg-blue-100 text-apple-blue flex items-center justify-center shrink-0 mt-0.5 font-bold">
                 💡
               </div>
@@ -234,33 +242,30 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
                 <span className="font-bold text-apple-text block mb-0.5 font-mono text-[11px]">
                   Key Takeaway:
                 </span>
-                <div className="text-apple-secondary text-[11px] leading-relaxed">
+                <div className="text-apple-secondary text-[11px] leading-relaxed break-words">
                   <MarkdownRenderer content={activeTakeaway} />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Footer Paper Citation Reference */}
-          <div className="mt-2 pt-2 border-t border-black/5 flex items-center justify-between text-[10px] font-mono text-apple-tertiary shrink-0">
+          {/* 5. Footer Paper Citation & Navigation Hint */}
+          <div className="mt-4 pt-2.5 border-t border-black/5 flex items-center justify-between text-[10px] font-mono text-apple-tertiary shrink-0 flex-wrap gap-1">
             <span className="flex items-center gap-1.5 truncate">
               <BookOpen className="w-3.5 h-3.5 text-apple-blue shrink-0" />
               <span className="truncate">Source: Vaswani et al. (2017) ➔ {chapter.sourceReference.section} (Page {chapter.sourceReference.page})</span>
             </span>
             <span className="text-apple-blue font-bold hidden sm:inline-block shrink-0">
-              Swipe / Wheel ↓ Next Chapter
+              Scroll / Wheel ↓ Next Chapter
             </span>
           </div>
-        </motion.div>
+        </div>
 
         {/* Right Column: Dedicated Living Onee Avatar Companion Dock (4 Cols on LG) */}
-        <motion.div
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="hidden lg:flex lg:col-span-4 min-w-0 flex-col justify-between h-full bg-gradient-to-b from-blue-50/90 via-indigo-50/60 to-purple-50/70 rounded-3xl border border-white/80 p-5 shadow-apple-md backdrop-blur-2xl overflow-hidden relative"
+        <div
+          className="hidden lg:flex lg:col-span-4 min-w-0 flex-col justify-between h-full bg-gradient-to-b from-blue-50/90 via-indigo-50/60 to-purple-50/70 rounded-3xl border border-black/5 p-5 shadow-apple-md overflow-hidden relative"
         >
-          {/* Contextual Narrator Speech Bubble (Stable Non-Flickering Container) */}
+          {/* Contextual Narrator Speech Bubble */}
           <div
             className="p-3.5 rounded-2xl bg-white/95 border border-black/10 shadow-apple-sm text-xs font-mono text-apple-secondary cursor-pointer hover:border-blue-300 transition-all select-none relative z-20"
             onClick={handleAvatarTap}
@@ -272,7 +277,7 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
               </span>
               <span className="text-[9px] text-apple-tertiary">Tap to Chat</span>
             </div>
-            <p className="text-[11px] text-apple-text leading-relaxed font-sans transition-opacity duration-300">
+            <p className="text-[11px] text-apple-text leading-relaxed font-sans">
               {displayCaption}
             </p>
           </div>
@@ -281,33 +286,21 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
           <div
             className="my-auto flex flex-col items-center justify-center cursor-pointer group select-none py-2 relative z-10"
             onClick={handleAvatarTap}
-            style={{ perspective: '1200px' }}
           >
-            <motion.div
-              style={{ transformStyle: 'preserve-3d' }}
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
-              className="relative flex flex-col items-center"
-            >
-              {/* Luminous Animated Radial Glow Aura */}
-              <motion.div
-                animate={{
-                  scale: [1, 1.15, 1],
-                  opacity: [0.75, 0.95, 0.75]
-                }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                className="absolute -inset-16 rounded-full pointer-events-none filter blur-2xl"
+            <div className="relative flex flex-col items-center">
+              {/* Luminous Glow Aura */}
+              <div
+                className="absolute -inset-12 rounded-full pointer-events-none filter blur-xl opacity-70"
                 style={{
-                  background: 'radial-gradient(circle at 50% 50%, rgba(0, 113, 227, 0.35) 0%, rgba(99, 102, 241, 0.22) 40%, rgba(168, 85, 247, 0.12) 65%, transparent 80%)'
+                  background: 'radial-gradient(circle, rgba(0, 113, 227, 0.3) 0%, rgba(99, 102, 241, 0.18) 45%, transparent 75%)'
                 }}
               />
 
-              {/* Procedural Avatar Controller */}
               <AvatarController
                 ref={avatarRef}
                 animation={currentAnim}
-                size={270}
-                className="relative z-10 filter drop-shadow-2xl"
+                size={260}
+                className="relative z-10 filter drop-shadow-xl"
                 onClick={handleAvatarTap}
               />
 
@@ -315,7 +308,7 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Ask Onee AI</span>
               </div>
-            </motion.div>
+            </div>
           </div>
 
           {/* Quick Action Navigation Launcher Pills */}
@@ -349,7 +342,7 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
               <span>3D Book</span>
             </button>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

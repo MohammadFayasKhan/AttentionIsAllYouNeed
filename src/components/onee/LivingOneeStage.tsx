@@ -4,16 +4,11 @@
  * Architecture Overview:
  * LivingOneeStage provides the persistent ambient companion layer across the application.
  *
- * Responsibilities:
- *   1. Event Bridge Subscription:
- *      Listens to global `oneeBridge` events and updates the avatar's animation and caption.
- *   2. Unlocked Procedural Choreography:
- *      Drives `avatarRef.current.play(reaction.animation)` to execute the full multi-step
- *      expression choreography and head movement without clamping the eyes to a static expression.
- *   3. Mobile Floating Action Hub:
- *      Renders a mobile-only floating button and reactive caption bubble on screens < lg.
- *   4. Fullscreen Companion Modal Host:
- *      Mounts `FullOneeOverlay.tsx` when user triggers chat, quiz, flashcards, or developer view.
+ * Performance Optimizations:
+ *   1. Stably Mounted Overlay:
+ *      Maintains FullOneeOverlay permanently in the DOM to avoid teardown/re-creation overhead.
+ *   2. Responsive Floating Hub:
+ *      On mobile, renders a non-intrusive floating trigger that never covers chapter content.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -22,7 +17,6 @@ import { FullOneeOverlay, OverlayTab } from './FullOneeOverlay';
 import { EducationalMode } from '../../data/paperData';
 import { oneeBridge, OneeReaction } from '../../lib/oneeEvents';
 import { Sparkles } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface LivingOneeStageProps {
   expression: ExpressionKey;
@@ -45,7 +39,7 @@ export const LivingOneeStage: React.FC<LivingOneeStageProps> = ({
   onClose,
   initialTab = 'chat'
 }) => {
-  const [currentExpression, setCurrentExpression] = useState<ExpressionKey>(expression);
+  const [, setCurrentExpression] = useState<ExpressionKey>(expression);
   const [, setCurrentAnimation] = useState<AnimationKey>('idle');
   const [activeCaption, setActiveCaption] = useState<string | null>(null);
 
@@ -94,48 +88,41 @@ export const LivingOneeStage: React.FC<LivingOneeStageProps> = ({
 
   return (
     <>
-      {/* Mobile-Only Floating Onee Assistant Trigger (On LG screens, Onee is prominent in SpatialScene) */}
-      <div className="lg:hidden fixed bottom-4 right-4 z-40 flex flex-col items-end pointer-events-none select-none max-w-[calc(100vw-2rem)]">
+      {/* Mobile-Only Floating Onee Assistant Trigger */}
+      <div className="lg:hidden fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-30 flex flex-col items-end pointer-events-none select-none max-w-[calc(100vw-1.5rem)]">
         {/* Caption Bubble */}
-        <AnimatePresence mode="wait">
-          {currentCaptionText && (
-            <motion.div
-              key={currentCaptionText}
-              initial={{ opacity: 0, scale: 0.9, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 10 }}
-              className="mb-2 max-w-[240px] px-3.5 py-2.5 rounded-2xl bg-white/95 border border-black/10 shadow-apple-md text-xs font-mono text-apple-secondary backdrop-blur-2xl pointer-events-auto cursor-pointer text-left break-words"
-              onClick={() => onOpen('chat')}
-            >
-              <span className="text-apple-blue font-bold block mb-0.5 text-[10px]">Onee Narrator:</span>
-              <span className="text-[11px] text-apple-text font-sans">{currentCaptionText}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {currentCaptionText && !isOpen && (
+          <div
+            className="mb-2 max-w-[240px] px-3 py-2 rounded-2xl bg-white/95 border border-black/10 shadow-apple-md text-xs font-mono text-apple-secondary pointer-events-auto cursor-pointer text-left break-words animate-in fade-in slide-in-from-bottom-2 duration-200"
+            onClick={() => onOpen('chat')}
+          >
+            <span className="text-apple-blue font-bold block mb-0.5 text-[10px]">Onee Narrator:</span>
+            <span className="text-[11px] text-apple-text font-sans">{currentCaptionText}</span>
+          </div>
+        )}
 
-        {/* Floating Action Button with Avatar Badge */}
-        <button
-          onClick={() => onOpen('chat')}
-          className="pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-full bg-apple-blue text-white shadow-apple-lg text-xs font-mono font-bold hover:bg-blue-600 transition-all"
-        >
-          <Sparkles className="w-4 h-4 animate-spin-slow" />
-          <span>Ask 3D Onee AI</span>
-        </button>
+        {/* Floating Action Button */}
+        {!isOpen && (
+          <button
+            onClick={() => onOpen('chat')}
+            className="pointer-events-auto flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-apple-blue text-white shadow-apple-lg text-xs font-mono font-bold hover:bg-blue-600 active:scale-95 transition-all"
+            aria-label="Open Onee Assistant"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Ask Onee</span>
+          </button>
+        )}
       </div>
 
-      {/* Large Fullscreen Conversational Companion Modal */}
-      <AnimatePresence>
-        {isOpen && (
-          <FullOneeOverlay
-            expression={currentExpression}
-            activeChapterId={activeChapterId}
-            initialTab={initialTab}
-            mode={mode}
-            onModeChange={onModeChange}
-            onClose={onClose}
-          />
-        )}
-      </AnimatePresence>
+      {/* Large Conversational Companion Modal (Stably Mounted) */}
+      <FullOneeOverlay
+        isOpen={isOpen}
+        activeChapterId={activeChapterId}
+        initialTab={initialTab}
+        mode={mode}
+        onModeChange={onModeChange}
+        onClose={onClose}
+      />
     </>
   );
 };

@@ -13,17 +13,15 @@
  * 2. Chapter Snap & Scrollytelling Engine:
  *    - Powered by `useChapterSnap.ts` with momentum detection, trackpad inertia protection,
  *      and keyboard navigation (Arrow keys, Page Up/Down).
- *    - Left margin chapter indicator rail displays progress across all 11 chapters.
  *
  * 3. Dynamic Ambient Glassmorphism:
- *    - Continuous multi-layer ambient blur glow orbs diffused through backdrop-filter frosted glass.
+ *    - Hardware-accelerated radial glow diffusion.
  *
  * 4. Responsive Scene Stage:
- *    - Houses `SpatialScene.tsx` inside Framer Motion's AnimatePresence for smooth chapter transitions.
- *    - Reserved 64px header space ensures zero overlap or clipping.
+ *    - Houses `SpatialScene.tsx` with smooth, natural document flow.
  *
  * 5. Living Companion Stage:
- *    - Houses `LivingOneeStage.tsx` and `FullOneeOverlay.tsx` with bidirectional event bridge sync.
+ *    - Houses `LivingOneeStage.tsx` and stably mounted `FullOneeOverlay.tsx`.
  */
 
 import React, { useState } from 'react';
@@ -64,46 +62,28 @@ export function App() {
   };
 
   return (
-    <div className="h-[100svh] w-screen overflow-hidden bg-[#f5f5f7] text-[#1d1d1f] font-sans relative selection:bg-blue-500/20 selection:text-blue-900 flex flex-col justify-between">
-      {/* Dynamic Ambient Blur Glow Orbs (Rich Vibrant Diffusion) */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <motion.div
-          animate={{
-            x: [0, 40, -30, 0],
-            y: [0, -30, 20, 0],
-            scale: [1, 1.15, 0.95, 1],
-            opacity: [0.55, 0.8, 0.55]
-          }}
-          transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-[15%] -left-[10%] w-[700px] h-[700px] rounded-full blur-[120px]"
+    <div className="h-[100dvh] w-screen overflow-hidden bg-[#f5f5f7] text-[#1d1d1f] font-sans relative selection:bg-blue-500/20 selection:text-blue-900 flex flex-col justify-between">
+      {/* Hardware-Accelerated Ambient Glow Diffusion */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 contain-strict">
+        <div
+          className="absolute -top-[15%] -left-[10%] w-[650px] h-[650px] rounded-full opacity-60 pointer-events-none gpu-layer"
           style={{
-            background: 'radial-gradient(circle, rgba(0, 113, 227, 0.35) 0%, rgba(99, 102, 241, 0.22) 45%, transparent 75%)'
+            background: 'radial-gradient(circle, rgba(0, 113, 227, 0.22) 0%, rgba(99, 102, 241, 0.12) 40%, transparent 70%)',
+            filter: 'blur(60px)'
           }}
         />
-        <motion.div
-          animate={{
-            x: [0, -45, 35, 0],
-            y: [0, 35, -20, 0],
-            scale: [1, 0.9, 1.12, 1],
-            opacity: [0.5, 0.75, 0.5]
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -bottom-[15%] -right-[10%] w-[750px] h-[750px] rounded-full blur-[140px]"
+        <div
+          className="absolute -bottom-[15%] -right-[10%] w-[700px] h-[700px] rounded-full opacity-55 pointer-events-none gpu-layer"
           style={{
-            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.32) 0%, rgba(236, 72, 153, 0.18) 45%, transparent 75%)'
+            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.20) 0%, rgba(236, 72, 153, 0.10) 40%, transparent 70%)',
+            filter: 'blur(60px)'
           }}
         />
-        <motion.div
-          animate={{
-            x: [0, 30, -35, 0],
-            y: [0, 20, -25, 0],
-            scale: [0.95, 1.08, 0.95],
-            opacity: [0.4, 0.65, 0.4]
-          }}
-          transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[120px]"
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] rounded-full opacity-45 pointer-events-none gpu-layer"
           style={{
-            background: 'radial-gradient(circle, rgba(0, 199, 190, 0.28) 0%, rgba(0, 113, 227, 0.16) 45%, transparent 75%)'
+            background: 'radial-gradient(circle, rgba(0, 199, 190, 0.18) 0%, rgba(0, 113, 227, 0.08) 40%, transparent 70%)',
+            filter: 'blur(50px)'
           }}
         />
       </div>
@@ -120,8 +100,8 @@ export function App() {
         onOpenOnee={handleOpenCompanion}
       />
 
-      {/* Chapter Indicator Rail (Left Margin Viewport) */}
-      <div className="fixed left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-2 pointer-events-none select-none">
+      {/* Chapter Indicator Rail (Left Margin Viewport on Desktop) */}
+      <div className="hidden xl:flex fixed left-4 top-1/2 -translate-y-1/2 z-30 flex-col items-center gap-2 pointer-events-none select-none">
         <div className="text-[10px] font-mono font-bold text-apple-blue tracking-widest uppercase mb-1">
           {activeIndex < 9 ? `0${activeIndex + 1}` : activeIndex + 1} / {totalChapters < 10 ? `0${totalChapters}` : totalChapters}
         </div>
@@ -130,7 +110,7 @@ export function App() {
             <button
               key={ch.id}
               onClick={() => goToChapter(idx)}
-              className={`w-2 rounded-full transition-all duration-300 ${
+              className={`w-2 rounded-full transition-all duration-200 ${
                 idx === activeIndex
                   ? 'h-6 bg-apple-blue shadow-apple-sm'
                   : 'h-2 bg-black/15 hover:bg-black/30'
@@ -141,16 +121,16 @@ export function App() {
         </div>
       </div>
 
-      {/* Discrete Chapter Scene Stage Container (Reserved Space for Header) */}
-      <main className="w-full h-full flex-1 pt-16 relative overflow-hidden flex items-center justify-center z-10">
+      {/* Discrete Chapter Scene Stage Container */}
+      <main className="w-full h-full flex-1 pt-16 relative overflow-hidden flex items-center justify-center z-10 contain-paint">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeChapter.id}
-            initial={{ opacity: 0, y: 16, scale: 0.985 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -16, scale: 0.985 }}
-            transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full h-full flex items-center justify-center overflow-hidden"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full h-full flex items-center justify-center overflow-hidden gpu-layer"
           >
             <SpatialScene
               chapter={activeChapter}
@@ -162,7 +142,7 @@ export function App() {
         </AnimatePresence>
       </main>
 
-      {/* Living Onee Companion & Reactions */}
+      {/* Living Onee Companion & Stably Mounted Overlay */}
       <LivingOneeStage
         expression={currentMood}
         activeChapterId={activeChapterId}

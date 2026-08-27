@@ -2,46 +2,39 @@
  * BenchmarkChart.tsx
  * --------------------------------------------------------------------------------
  * Architecture Overview:
- * Interactive simulation of Table 2: WMT 2014 Translation Benchmarks (Vaswani et al. 2017).
- * Compares English-to-German (EN-DE) and English-to-French (EN-FR) BLEU scores against
- * computational training costs (FLOPs) across prior state-of-the-art architectures.
+ * Interactive Table 2: Translation Quality (BLEU) vs Training Cost (FLOPs)
+ * on WMT 2014 English-to-German and English-to-French (Vaswani et al. 2017, Table 2 & Section 5).
  *
- * Core Features:
- *   1. Smooth Auto-Play Model Sweep:
- *      Auto-cycles across all benchmark rows every 2.1s with an interactive Play/Pause toggle.
- *   2. Animated Relative BLEU Bars:
- *      Visual comparative bars highlighting the Transformer Big model's 28.4 BLEU breakthrough.
- *   3. Training Cost Efficiency Gauge:
- *      Demonstrates an order-of-magnitude reduction in FLOPs (3.5 GPU days vs months).
- *   4. Zero-Overlap Responsive Layout:
- *      4 curated landmark models fitting naturally into the available vertical viewport
- *      with strict anti-overlap margins and no-snap wheel isolation.
+ * Responsive Optimizations:
+ *   - Auto-height `w-full h-auto` container with responsive model bars.
  */
 
 import React, { useState, useEffect } from 'react';
 import { TABLE_2_TRANSLATION, Table2Row } from '../../data/paperData';
 import { oneeBridge } from '../../lib/oneeEvents';
-import { motion } from 'framer-motion';
-import { Play, Pause, Award, Zap, Sparkles } from 'lucide-react';
+import { Award, Zap, Play, Pause, Sparkles } from 'lucide-react';
 
 export const BenchmarkChart: React.FC = () => {
-  const [selectedIdx, setSelectedIdx] = useState<number>(0); // Default to Transformer (big)
+  const [selectedIdx, setSelectedIdx] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
 
-  // Filter to 4 primary comparative models for a clean, non-overlapping viewport
+  // Representative subset of Table 2 models
   const benchmarkModels: Table2Row[] = [
-    TABLE_2_TRANSLATION[0], // Transformer (big)
-    TABLE_2_TRANSLATION[1], // Transformer (base)
+    TABLE_2_TRANSLATION[1], // Transformer (big) - 28.4 BLEU
+    TABLE_2_TRANSLATION[0], // Transformer (base) - 27.3 BLEU
+    TABLE_2_TRANSLATION[3], // ByteNet
     TABLE_2_TRANSLATION[4], // GNMT + RL
     TABLE_2_TRANSLATION[5]  // ConvS2S
   ].filter(Boolean);
 
-  // Auto-play model sweep
+  // Auto-play model sweep with tab visibility awareness
   useEffect(() => {
     if (!isPlaying) return;
 
     const interval = setInterval(() => {
-      setSelectedIdx((prev) => (prev + 1) % benchmarkModels.length);
+      if (document.visibilityState === 'visible') {
+        setSelectedIdx((prev) => (prev + 1) % benchmarkModels.length);
+      }
     }, 2200);
 
     return () => clearInterval(interval);
@@ -65,11 +58,9 @@ export const BenchmarkChart: React.FC = () => {
   const activeModel = benchmarkModels[selectedIdx] || benchmarkModels[0];
 
   return (
-    <div
-      className="w-full h-full min-h-[200px] p-3 sm:p-4 rounded-3xl backdrop-blur-2xl bg-white/85 border border-white/60 shadow-apple-md flex flex-col justify-between font-sans overflow-hidden"
-    >
+    <div className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-3 sm:p-4 flex flex-col gap-2.5 font-sans gpu-layer">
       {/* Header & Control Bar */}
-      <div className="flex items-center justify-between border-b border-black/5 pb-1.5 gap-1.5 shrink-0 flex-wrap">
+      <div className="flex items-center justify-between border-b border-black/5 pb-2 gap-1.5 flex-wrap">
         <div className="min-w-0">
           <h3 className="text-xs sm:text-sm font-bold text-apple-text font-mono flex items-center gap-1.5">
             <span>Table 2: WMT 2014 Benchmarks</span>
@@ -96,23 +87,18 @@ export const BenchmarkChart: React.FC = () => {
       </div>
 
       {/* Interactive Models Benchmark Ladder */}
-      <div className="my-auto py-1 space-y-1.5 flex-1 flex flex-col justify-center min-h-0">
-        <div className="flex flex-col gap-1 w-full max-w-xl mx-auto">
+      <div className="space-y-1.5">
+        <div className="flex flex-col gap-1 w-full">
           {benchmarkModels.map((item: Table2Row, idx: number) => {
             const isSelected = idx === selectedIdx;
             const bleuScore = item.bleuEnDe || 23.0;
             const barWidthPercent = ((bleuScore - 20) / (28.4 - 20)) * 100;
 
             return (
-              <motion.div
+              <div
                 key={idx}
                 onClick={() => handleSelectModel(idx)}
-                whileHover={{ scale: 1.01 }}
-                animate={{
-                  borderColor: isSelected ? '#0071e3' : item.isTransformer ? '#93c5fd' : 'rgba(0,0,0,0.06)',
-                  boxShadow: isSelected ? '0 2px 8px rgba(0,113,227,0.15)' : 'none'
-                }}
-                className={`p-1.5 sm:p-2 rounded-xl border transition-all cursor-pointer font-mono flex items-center justify-between gap-2 ${
+                className={`p-2 rounded-xl border transition-all cursor-pointer font-mono flex items-center justify-between gap-2 ${
                   isSelected
                     ? 'bg-blue-50/90 border-apple-blue shadow-apple-xs font-bold'
                     : item.isTransformer
@@ -133,11 +119,10 @@ export const BenchmarkChart: React.FC = () => {
                   </div>
 
                   {/* Relative BLEU Bar */}
-                  <div className="w-full bg-black/5 h-1 rounded-full overflow-hidden mt-0.5 max-w-[180px]">
-                    <motion.div
-                      animate={{ width: `${Math.min(100, Math.max(10, barWidthPercent))}%` }}
-                      transition={{ duration: 0.3 }}
-                      className={`h-full rounded-full ${
+                  <div className="w-full bg-black/5 h-1 rounded-full overflow-hidden mt-1 max-w-[180px]">
+                    <div
+                      style={{ width: `${Math.min(100, Math.max(10, barWidthPercent))}%` }}
+                      className={`h-full rounded-full transition-all duration-300 ${
                         item.isTransformer ? 'bg-apple-blue' : 'bg-slate-400'
                       }`}
                     />
@@ -158,17 +143,17 @@ export const BenchmarkChart: React.FC = () => {
                     </span>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </div>
 
         {/* Selected Benchmark Detail Callout */}
-        <div className="p-1.5 rounded-xl bg-blue-50/80 border border-blue-200 text-xs font-mono text-apple-text flex items-center justify-between gap-2 shadow-apple-xs shrink-0 max-w-xl mx-auto w-full">
+        <div className="p-2 rounded-xl bg-blue-50/80 border border-blue-200 text-xs font-mono text-apple-text flex items-center justify-between gap-2 shadow-apple-xs w-full">
           <div className="flex items-center gap-1 min-w-0">
             <Zap className="w-3 h-3 text-amber-500 shrink-0" />
             <span className="text-[10px] text-apple-secondary font-sans truncate">
-              <strong className="text-apple-text">{activeModel.model}:</strong> {activeModel.gpus ? `${activeModel.gpus} (${activeModel.trainingTime})` : 'Recurrent Baseline Model'}
+              <strong className="text-apple-text">{activeModel.model}:</strong> {activeModel.gpus ? `${activeModel.gpus} (${activeModel.trainingTime})` : 'Recurrent Baseline'}
             </span>
           </div>
           <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded border border-emerald-200 shrink-0">
@@ -178,7 +163,7 @@ export const BenchmarkChart: React.FC = () => {
       </div>
 
       {/* Benchmark Efficiency Footer */}
-      <div className="border-t border-black/5 pt-1 text-[9px] sm:text-[10px] font-mono text-apple-secondary flex items-center justify-between flex-wrap gap-1 shrink-0">
+      <div className="border-t border-black/5 pt-1.5 text-[9px] sm:text-[10px] font-mono text-apple-secondary flex items-center justify-between flex-wrap gap-1">
         <span className="flex items-center gap-1 text-apple-emerald font-bold">
           <Sparkles className="w-2.5 h-2.5 text-emerald-600" /> Base: 12h on 8 P100 GPUs (3.3×10¹⁸ FLOPs)
         </span>

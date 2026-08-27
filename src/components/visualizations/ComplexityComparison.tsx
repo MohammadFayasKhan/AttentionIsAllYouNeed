@@ -2,50 +2,42 @@
  * ComplexityComparison.tsx
  * --------------------------------------------------------------------------------
  * Architecture Overview:
- * Interactive simulation of Table 1: Layer Complexity Comparison (Vaswani et al. 2017).
- * Compares asymptotic computational complexity per layer, minimum sequential operations,
- * and maximum path lengths across Self-Attention, Recurrent, Convolutional, and
- * Restricted Self-Attention layers.
+ * Interactive Table 1: Maximum Path Lengths, Per-Layer Complexity, and Minimum
+ * Sequential Operations across Layer Types (Vaswani et al. 2017, Table 1 & Section 4).
  *
- * Core Features:
- *   1. Smooth Auto-Play Metric Sweep:
- *      Auto-cycles across Complexity / Layer, Sequential Operations, and Maximum Path Length
- *      every 2.2 seconds with a smooth Play/Pause toggle.
- *   2. Asymptotic Tradeoff Highlighting:
- *      Illustrates why Self-Attention achieves constant O(1) sequential operations, eliminating
- *      the O(n) recurrence bottleneck of RNNs.
- *   3. Zero-Overlap Responsive Layout:
- *      Streamlined header toolbar and compact 2x2 grid ensuring no visual collisions on any screen.
+ * Responsive Optimizations:
+ *   - Auto-height `w-full h-auto` with flexible grid and responsive tradeoff cards.
  */
 
 import React, { useState, useEffect } from 'react';
 import { TABLE_1_COMPLEXITY } from '../../data/paperData';
 import { oneeBridge } from '../../lib/oneeEvents';
-import { motion } from 'framer-motion';
 import { Play, Pause, Sparkles } from 'lucide-react';
 
 export const ComplexityComparison: React.FC = () => {
+  const [selectedRowIdx, setSelectedRowIdx] = useState<number>(0);
   const [selectedMetric, setSelectedMetric] = useState<'complexity' | 'sequential' | 'path'>('complexity');
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [selectedRowIdx, setSelectedRowIdx] = useState<number>(0);
 
   const metrics: { id: 'complexity' | 'sequential' | 'path'; label: string }[] = [
-    { id: 'complexity', label: 'Complexity' },
-    { id: 'sequential', label: 'Sequential' },
+    { id: 'complexity', label: 'Complexity / Layer' },
+    { id: 'sequential', label: 'Sequential Ops' },
     { id: 'path', label: 'Max Path' }
   ];
 
-  // Auto-play metric cycle
+  // Auto-play metric cycle with tab visibility awareness
   useEffect(() => {
     if (!isPlaying) return;
 
     const interval = setInterval(() => {
-      setSelectedMetric((prev) => {
-        if (prev === 'complexity') return 'sequential';
-        if (prev === 'sequential') return 'path';
-        return 'complexity';
-      });
-      setSelectedRowIdx((prev) => (prev + 1) % TABLE_1_COMPLEXITY.length);
+      if (document.visibilityState === 'visible') {
+        setSelectedMetric((prev) => {
+          if (prev === 'complexity') return 'sequential';
+          if (prev === 'sequential') return 'path';
+          return 'complexity';
+        });
+        setSelectedRowIdx((prev) => (prev + 1) % TABLE_1_COMPLEXITY.length);
+      }
     }, 2200);
 
     return () => clearInterval(interval);
@@ -64,11 +56,9 @@ export const ComplexityComparison: React.FC = () => {
   const activeRow = TABLE_1_COMPLEXITY[selectedRowIdx];
 
   return (
-    <div
-      className="w-full h-full min-h-[200px] p-3 sm:p-4 rounded-3xl backdrop-blur-2xl bg-white/85 border border-white/60 shadow-apple-md flex flex-col justify-between font-sans overflow-hidden"
-    >
+    <div className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-3 sm:p-4 flex flex-col gap-2.5 font-sans gpu-layer">
       {/* Header & Control Bar */}
-      <div className="flex items-center justify-between border-b border-black/5 pb-1.5 gap-1.5 shrink-0 flex-wrap">
+      <div className="flex items-center justify-between border-b border-black/5 pb-2 gap-1.5 flex-wrap">
         <div className="min-w-0">
           <h3 className="text-xs sm:text-sm font-bold text-apple-text font-mono flex items-center gap-1.5">
             <span>Table 1: Layer Complexity</span>
@@ -79,10 +69,9 @@ export const ComplexityComparison: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-1 font-mono text-xs flex-wrap">
-          {/* Auto-Play Sweep Button */}
           <button
             onClick={toggleAutoPlay}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs ${
               isPlaying
                 ? 'bg-apple-blue text-white hover:bg-blue-600'
                 : 'bg-slate-100 text-apple-secondary hover:text-apple-text hover:bg-slate-200'
@@ -112,8 +101,8 @@ export const ComplexityComparison: React.FC = () => {
       </div>
 
       {/* Interactive Layer Rows Grid */}
-      <div className="my-auto py-1 space-y-1 flex-1 flex flex-col justify-center min-h-0">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 w-full">
+      <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 w-full">
           {TABLE_1_COMPLEXITY.map((row, idx) => {
             const isSelfAttention = row.layerType.includes("Self-Attention");
             const isSelected = idx === selectedRowIdx;
@@ -126,15 +115,10 @@ export const ComplexityComparison: React.FC = () => {
                 : row.maxPathLength;
 
             return (
-              <motion.div
+              <div
                 key={idx}
                 onClick={() => setSelectedRowIdx(idx)}
-                whileHover={{ scale: 1.01 }}
-                animate={{
-                  borderColor: isSelected ? '#0071e3' : isSelfAttention ? '#93c5fd' : 'rgba(0,0,0,0.06)',
-                  boxShadow: isSelected ? '0 2px 8px rgba(0,113,227,0.15)' : 'none'
-                }}
-                className={`p-1.5 sm:p-2 rounded-xl border transition-all cursor-pointer font-mono flex flex-col justify-between ${
+                className={`p-2 rounded-xl border transition-all cursor-pointer font-mono flex flex-col justify-between ${
                   isSelected
                     ? 'bg-blue-50/90 border-apple-blue font-bold shadow-apple-xs'
                     : isSelfAttention
@@ -159,13 +143,13 @@ export const ComplexityComparison: React.FC = () => {
                 <p className="text-[9px] sm:text-[10px] text-apple-secondary font-sans leading-tight truncate">
                   {row.notes}
                 </p>
-              </motion.div>
+              </div>
             );
           })}
         </div>
 
         {/* Selected Layer Tradeoff Card */}
-        <div className="p-1.5 rounded-xl bg-blue-50/80 border border-blue-200 text-xs font-mono text-apple-text flex items-center justify-between gap-2 shadow-apple-xs shrink-0 w-full">
+        <div className="p-2 rounded-xl bg-blue-50/80 border border-blue-200 text-xs font-mono text-apple-text flex items-center justify-between gap-2 shadow-apple-xs w-full">
           <div className="flex items-center gap-1 min-w-0">
             <Sparkles className="w-3 h-3 text-apple-blue shrink-0" />
             <span className="text-[10px] text-apple-secondary font-sans truncate">
@@ -179,7 +163,7 @@ export const ComplexityComparison: React.FC = () => {
       </div>
 
       {/* Asymptotic Variables Footer */}
-      <div className="border-t border-black/5 pt-1 text-[9px] sm:text-[10px] font-mono text-apple-secondary flex items-center justify-between flex-wrap gap-1 shrink-0">
+      <div className="border-t border-black/5 pt-1.5 text-[9px] sm:text-[10px] font-mono text-apple-secondary flex items-center justify-between flex-wrap gap-1">
         <span>n = length | d = dimension | k = kernel</span>
         <span className="text-apple-blue font-bold">n &lt; d (Machine Translation)</span>
       </div>
