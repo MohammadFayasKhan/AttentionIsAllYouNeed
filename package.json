@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@bible-strong/avatar-react": "^0.1.0",
     "@bible-strong/avatar-web": "^0.1.0",
     "canvas-confetti": "^1.9.3",
     "framer-motion": "^11.3.8",
