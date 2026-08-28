@@ -5,22 +5,9 @@
  * Sketchbook is an interactive 3D virtual research notebook replicating the original
  * Vaswani et al. (2017) NIPS conference publication spreads and blueprints.
  *
- * Core Features:
- *   1. Smooth Auto-Tour Animation:
- *      Automatically cycles through paper plates every 3.8s with an interactive Play/Pause toggle.
- *   2. 3D Perspective Floating Physics:
- *      Uses CSS 3D transforms (`rotateX`, `rotateY`, `scale`, `perspective: 1200px`) with
- *      subtle continuous ambient floating tilt to create a tangible physical paper feel.
- *   3. Pointer Drag & Rotation Physics:
- *      Supports drag-to-tilt with elastic bounds (-25deg to +35deg X, -40deg to +40deg Y).
- *   4. Anti-Snap Wheel Isolation:
- *      Tagged with `data-no-snap="true"` to prevent trackpad gestures from hijacking chapter navigation.
- *   5. Magnifying Loupe & Zoom Controls:
- *      Interactive loupe overlay magnifies specific diagram details and formulas.
- *   6. Verified Paper Archive Spreads:
- *      Covers 8 curated paper plates: NIPS 2017 Archive Cover, Figure 1 Architecture,
- *      Figure 2 Attention, Section 3.5 Positional Harmonics, Table 1 Complexity,
- *      Table 2 BLEU Benchmarks, Table 3 Hyperparameter Ablations, Table 4 Parsing.
+ * Layout & Content Protection:
+ *   - Uses a self-contained, auto-height layout that never clips or overflows surrounding document text.
+ *   - Drag-to-tilt 3D stage and loupe overlay maintain stable boundaries.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -61,85 +48,84 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
       title: "The Transformer Model Architecture",
       subtitle: "Encoder & Decoder Stacks (N=6 Identical Layers)",
       content: "Figure 1: Complete Block Architecture",
-      body: "- **Encoder:** $N=6$ layers with Multi-Head Self-Attention + Position-wise Feed-Forward Network.\n- **Decoder:** $N=6$ layers with Masked Multi-Head Attention + Encoder-Decoder Cross-Attention + Feed-Forward.\n- **Sub-layer Connection:** $\\text{LayerNorm}(x + \\text{SubLayer}(x))$ with $d_{\\text{model}} = 512$.",
+      body: "- **Encoder**: $N=6$ layers with Multi-Head Self-Attention + Position-wise Feed-Forward Network.\n- **Decoder**: $N=6$ layers with Masked Multi-Head Self-Attention + Encoder-Decoder Cross Attention.\n- **Residual Connections**: $\\text{LayerNorm}(x + \\text{SubLayer}(x))$.",
       details: ["N = 6 Layers", "d_model = 512", "d_ff = 2048", "Residual Add & Norm"],
       color: "from-indigo-50 via-white to-slate-100"
     },
     {
       figure: "Figure 2",
       title: "Scaled Dot-Product & Multi-Head Attention",
-      subtitle: "Equation (1) & Equation (2) Blueprint",
+      subtitle: "Equations 1 & 2 Breakdown",
       content: "$$\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V$$",
-      body: "- **Key Scaling:** Dividing by $\\sqrt{d_k} = \\sqrt{64} = 8$ counters large dot product gradient saturation.\n- **Multi-Head Projection:** $h=8$ parallel heads project to $d_k = d_v = 64$.\n- **Output Linear:** $\\text{MultiHead}(Q,K,V) = \\text{Concat}(\\text{head}_1, \\dots, \\text{head}_8)W^O$.",
-      details: ["h = 8 Heads", "d_k = 64", "d_v = 64", "Softmax Scaling"],
-      color: "from-purple-50 via-white to-slate-100"
+      body: "- **Dot-Product**: Fast, matrix-multiplication optimized via BLAS.\n- **Scaling Factor**: Dividing by $\\sqrt{d_k} = \\sqrt{64} = 8$ prevents softmax gradient vanishing.\n- **Multi-Head**: $h=8$ parallel linear projections into 64-dimensional subspaces.",
+      details: ["h = 8 Heads", "d_k = d_v = 64", "Scale Factor = 1/8", "Softmax Stabilized"],
+      color: "from-sky-50 via-white to-slate-100"
     },
     {
       figure: "Section 3.5",
       title: "Sinusoidal Positional Encoding",
-      subtitle: "Equations (3) & (4) Frequency Harmonics",
-      content: "$$\\text{PE}_{(pos, 2i)} = \\sin\\left(\\frac{pos}{10000^{2i/d_{\\text{model}}}}\\right)$$",
-      body: "- **Cosine Wave:** $\\text{PE}_{(pos, 2i+1)} = \\cos\\left(pos / 10000^{2i/d_{\\text{model}}}\\right)$.\n- **Wavelengths:** Geometric progression from $2\\pi$ to $10000 \\cdot 2\\pi$.\n- **Relative Offset Property:** $\\text{PE}_{(pos+k)}$ can be represented as a linear rotation matrix of $\\text{PE}_{pos}$.",
-      details: ["pos = 0..512", "i = 0..255", "Fixed Function", "Generalizes to n > train"],
-      color: "from-cyan-50 via-white to-slate-100"
+      subtitle: "Equations 3 & 4: Wavelengths from 2π to 10000·2π",
+      content: "$$PE_{(pos, 2i)} = \\sin\\left(\\frac{pos}{10000^{2i/d_{model}}}\\right), \\quad PE_{(pos, 2i+1)} = \\cos\\left(\\frac{pos}{10000^{2i/d_{model}}}\\right)$$",
+      body: "- **Geometric Progression**: Enables attending by relative offsets via linear transformation $PE_{pos+k} = R(\\omega_i k) PE_{pos}$.\n- **Extrapolation**: Allows sequence length scaling beyond training lengths without retraining.",
+      details: ["d_model = 512", "Wave Frequencies", "Relative Shift Property", "Linear Transformation"],
+      color: "from-teal-50 via-white to-slate-100"
     },
     {
       figure: "Table 1",
-      title: "Complexity Comparison Matrix",
-      subtitle: "Self-Attention vs Recurrent vs Convolutional",
-      content: "Self-Attention: O(1) Sequential Operations",
-      body: "| Layer Type | Complexity | Sequential Ops | Max Path |\n| :--- | :--- | :--- | :--- |\n| **Self-Attention** | $\\mathcal{O}(n^2 \\cdot d)$ | $\\mathcal{O}(1)$ | $\\mathcal{O}(1)$ |\n| **Recurrent (RNN)** | $\\mathcal{O}(n \\cdot d^2)$ | $\\mathcal{O}(n)$ | $\\mathcal{O}(n)$ |\n| **Convolutional** | $\\mathcal{O}(k \\cdot n \\cdot d^2)$ | $\\mathcal{O}(1)$ | $\\mathcal{O}(\\log_k(n))$ |",
-      details: ["n = sequence length", "d = 512 dimension", "Faster for n < d", "O(1) Path Length"],
-      color: "from-emerald-50 via-white to-slate-100"
+      title: "Maximum Path Lengths & Layer Complexity",
+      subtitle: "Section 4: Self-Attention vs Recurrent vs Convolutional",
+      content: "Self-Attention achieves O(1) Sequential Operations & O(1) Maximum Path Length",
+      body: "- **Self-Attention**: $O(n^2 \\cdot d)$ complexity per layer, $O(1)$ sequential operations, $O(1)$ max path.\n- **Recurrent**: $O(n \\cdot d^2)$ complexity, $O(n)$ sequential operations, $O(n)$ max path.\n- **Convolutional**: $O(k \\cdot n \\cdot d^2)$ complexity, $O(1)$ sequential operations, $O(\\log_k(n))$ max path.",
+      details: ["O(1) Step Operations", "O(1) Path Length", "GPU Matrix Parallelism", "Table 1 NIPS 2017"],
+      color: "from-purple-50 via-white to-slate-100"
     },
     {
       figure: "Table 2",
-      title: "Translation BLEU Benchmarks",
-      subtitle: "WMT 2014 English-to-German & English-to-French",
-      content: "Transformer (big): 28.4 EN-DE BLEU in 3.5 GPU Days",
-      body: "- **Transformer (big):** **28.4 BLEU** on EN-DE, **41.8 BLEU** on EN-FR ($2.3 \\times 10^{19}$ FLOPs).\n- **Transformer (base):** **27.3 BLEU** in just 12 hours on 8 P100 GPUs ($3.3 \\times 10^{18}$ FLOPs).\n- **Previous Best (ConvS2S):** 25.16 BLEU ($9.6 \\times 10^{19}$ FLOPs).",
-      details: ["8 NVIDIA P100", "3.5 Days Big", "12 Hours Base", "Adam Optimizer"],
-      color: "from-amber-50 via-white to-slate-100"
+      title: "WMT 2014 Translation Benchmarks",
+      subtitle: "Section 5: State-of-the-Art Results at a Fraction of Training Cost",
+      content: "Transformer (big): 28.4 EN-DE BLEU | 41.8 EN-FR BLEU",
+      body: "- **EN-DE BLEU**: $28.4$ (Big) / $27.3$ (Base) outperforms best previous models by $>2.0$ BLEU.\n- **Training Time**: Base model trained in only 12 hours on 8 P100 GPUs ($3.3 \\times 10^{18}$ FLOPs).\n- **Big Model**: Trained in 3.5 days ($2.3 \\times 10^{19}$ FLOPs), establishing new SOTA.",
+      details: ["28.4 BLEU EN-DE", "41.8 BLEU EN-FR", "8 P100 GPUs", "3.5 Days Training"],
+      color: "from-emerald-50 via-white to-slate-100"
     },
     {
       figure: "Table 3",
-      title: "Hyperparameter Ablation Laboratory",
-      subtitle: "Testing Head Count, Key Dimensions, and Depth",
-      content: "Single-head (h=1) drops BLEU by 0.9 points",
-      body: "- **Row (A):** Single head ($h=1, d_k=512$) drops BLEU to 24.9. 32 heads ($d_k=16$) drops to 25.4.\n- **Row (B):** Small keys ($d_k=16$) hurts BLEU to 25.1.\n- **Row (C):** Deeper model ($N=8$) improves BLEU to 26.4.\n- **Row (E):** Learned positional embeddings match fixed sinusoids (25.7 vs 25.8 BLEU).",
-      details: ["Ablation (A)-(E)", "newstest2013 dev", "65M Params Base", "Optimal h=8"],
-      color: "from-rose-50 via-white to-slate-100"
+      title: "Model Variations & Hyperparameter Ablations",
+      subtitle: "Section 5.3: Attention Heads, Key Dimensions, and Regularization",
+      content: "Single-head (h=1) drops BLEU by 0.9 points (24.9 vs 25.8)",
+      body: "- **Row (A)**: $h=8$ optimal. Too many heads ($h=16, 32$) drops BLEU; single head drops BLEU by 0.9.\n- **Row (B)**: Reducing key size $d_k=16$ hurts quality (25.8 $\\rightarrow$ 25.4).\n- **Row (C)**: Bigger model with $N=8$ layers achieves 26.4 BLEU.",
+      details: ["Ablation Study", "Optimal h = 8", "d_k Sensitivity", "Table 3 Results"],
+      color: "from-amber-50 via-white to-slate-100"
     },
     {
       figure: "Table 4",
-      title: "English Constituency Parsing",
-      subtitle: "Generalizing to Non-Translation Tasks",
-      content: "Transformer WSJ-only: 91.3 F1 Score",
-      body: "- **WSJ Only:** 4-layer Transformer achieved **91.3 F1** without task-specific tuning.\n- **Semi-supervised:** Achieved **92.7 F1**, rivaling Recurrent Neural Network Grammars.\n- **Significance:** Proved Transformer generalizes beyond machine translation.",
-      details: ["4-layer Model", "13.7M Params", "Penn Treebank", "Constituency Parsing"],
-      color: "from-slate-50 via-white to-blue-50"
+      title: "English Constituency Parsing Generalization",
+      subtitle: "Section 5.4: WSJ 23 Parsing Score: 92.7 F1 (Semi-supervised)",
+      content: "Transformer 4-layer model achieves 91.3 F1 without task-specific tuning",
+      body: "- **Out-of-Domain**: Evaluated on WSJ 23 parsing to test whether Transformer generalizes.\n- **Results**: 4-layer Transformer with $d_{model}=1024$ achieved 91.3 F1 (unlabeled) and 92.7 F1 (semi-supervised), outperforming recurrent baselines.",
+      details: ["Penn Treebank", "WSJ 23", "92.7 F1 Score", "Generalization"],
+      color: "from-rose-50 via-white to-slate-100"
     }
   ];
 
-  // Auto-tour animation loop with tab visibility awareness
+  // Auto-tour rotation with tab visibility awareness
   useEffect(() => {
-    if (!isPlaying || isDragging) return;
+    if (!isPlaying) return;
 
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         setCurrentPage((prev) => (prev + 1) % paperPages.length);
       }
-    }, 3800);
+    }, 4500);
 
     return () => clearInterval(interval);
-  }, [isPlaying, isDragging, paperPages.length]);
+  }, [isPlaying, paperPages.length]);
 
-  const currentPlate = paperPages[currentPage] || paperPages[0];
+  const currentPlate = paperPages[currentPage];
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (loupeActive) return;
     setIsDragging(true);
-    setDragStart({ x: e.clientX - rotation.y * 3, y: e.clientY - rotation.x * 3 });
+    setDragStart({ x: e.clientX, y: e.clientY });
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -192,10 +178,10 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
 
   return (
     <div
-      className={`relative w-full h-full min-h-[460px] flex flex-col items-center justify-between p-4 overflow-hidden rounded-3xl backdrop-blur-2xl bg-white/85 border border-white/60 shadow-apple-md font-sans ${className}`}
+      className={`relative w-full h-auto min-h-[460px] flex flex-col items-center justify-between p-4 rounded-3xl bg-white/95 border border-black/10 shadow-apple-md font-sans ${className}`}
     >
       {/* Top Controls Bar */}
-      <div className="w-full flex items-center justify-between z-30 pb-2 border-b border-black/5 flex-wrap gap-2">
+      <div className="w-full flex items-center justify-between z-30 pb-2.5 border-b border-black/5 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full text-xs text-apple-blue font-mono font-bold shadow-apple-sm">
             <Move className="w-3.5 h-3.5 animate-pulse" />
@@ -216,7 +202,7 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-white/90 border border-black/10 backdrop-blur-md px-2.5 py-1 rounded-full text-xs text-apple-secondary shadow-apple-sm">
+        <div className="flex items-center gap-1.5 bg-white/90 border border-black/10 px-2.5 py-1 rounded-full text-xs text-apple-secondary shadow-apple-sm">
           <button
             onClick={() => setZoom((z) => Math.min(z + 0.2, 1.6))}
             className="p-1 hover:text-apple-blue transition-colors"
@@ -259,7 +245,7 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
-        className="w-full flex-1 min-h-[300px] flex items-center justify-center cursor-grab active:cursor-grabbing select-none relative my-2 overflow-visible"
+        className="w-full h-[240px] sm:h-[260px] flex items-center justify-center cursor-grab active:cursor-grabbing select-none relative my-1 overflow-visible"
         style={{ perspective: '1200px' }}
       >
         <motion.div
@@ -273,7 +259,7 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
             rotateX: isDragging ? { duration: 0 } : { duration: 6, repeat: Infinity, ease: 'easeInOut' },
             rotateY: isDragging ? { duration: 0 } : { duration: 6, repeat: Infinity, ease: 'easeInOut' }
           }}
-          className="relative w-[360px] sm:w-[480px] h-[270px] sm:h-[310px]"
+          className="relative w-[320px] sm:w-[430px] h-[220px] sm:h-[240px]"
           style={{ transformStyle: 'preserve-3d' }}
         >
           {/* Main Paper Plate Container */}
@@ -284,43 +270,47 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
               animate={{ opacity: 1, scale: 1, rotateY: 0 }}
               exit={{ opacity: 0, scale: 0.96, rotateY: 8 }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
-              className="absolute inset-0 rounded-3xl bg-white shadow-apple-lg border border-black/10 p-5 flex flex-col justify-between overflow-hidden"
+              className={`w-full h-full rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-2xl border border-black/10 bg-gradient-to-br ${currentPlate.color} flex flex-col justify-between relative overflow-visible backdrop-blur-md`}
+              style={{
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05)'
+              }}
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${currentPlate.color} opacity-70 pointer-events-none`} />
+              {/* Paper Watermark Texture */}
+              <div className="absolute inset-0 bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.03] pointer-events-none rounded-3xl" />
 
               {/* Plate Header */}
-              <div className="relative z-10 flex items-center justify-between border-b border-black/5 pb-2.5">
-                <span className="text-[10px] font-mono font-bold tracking-widest text-apple-blue bg-blue-100/80 px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1">
-                  <Sparkles className="w-2.5 h-2.5" />
+              <div className="relative z-10 flex items-center justify-between border-b border-black/5 pb-2">
+                <span className="text-[10px] font-mono font-bold text-apple-blue px-2.5 py-0.5 rounded-full bg-white border border-blue-200 shadow-apple-xs flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
                   {currentPlate.figure}
                 </span>
-                <span className="text-[11px] font-mono text-apple-tertiary">
+                <span className="text-[9px] font-mono text-apple-tertiary">
                   Vaswani et al. (2017)
                 </span>
               </div>
 
               {/* Plate Main Title & Body */}
-              <div className="relative z-10 my-auto py-2 space-y-2 overflow-y-auto max-h-[160px] no-scrollbar">
+              <div className="relative z-10 my-auto py-1 space-y-1.5 overflow-visible">
                 <div>
-                  <h3 className="text-base sm:text-lg font-bold text-apple-text font-mono leading-tight">
+                  <h3 className="text-sm sm:text-base font-bold text-apple-text font-mono leading-tight">
                     {currentPlate.title}
                   </h3>
-                  <p className="text-xs text-apple-secondary font-mono mt-0.5">
+                  <p className="text-[11px] text-apple-secondary font-mono mt-0.5">
                     {currentPlate.subtitle}
                   </p>
                 </div>
 
-                <div className="p-2.5 rounded-2xl bg-white/90 border border-black/5 shadow-apple-xs font-mono text-xs text-apple-text">
+                <div className="p-2 rounded-xl bg-white/90 border border-black/5 shadow-apple-xs font-mono text-xs text-apple-text">
                   <MarkdownRenderer content={currentPlate.content} />
                 </div>
 
-                <div className="text-xs text-apple-secondary leading-relaxed font-sans">
+                <div className="text-[11px] text-apple-secondary leading-relaxed font-sans">
                   <MarkdownRenderer content={currentPlate.body} />
                 </div>
               </div>
 
               {/* Plate Footer Details */}
-              <div className="relative z-10 border-t border-black/5 pt-2 flex items-center justify-between gap-1 flex-wrap">
+              <div className="relative z-10 border-t border-black/5 pt-1.5 flex items-center justify-between gap-1 flex-wrap">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {currentPlate.details.map((d, i) => (
                     <span

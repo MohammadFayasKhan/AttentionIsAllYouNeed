@@ -6,9 +6,8 @@
  *   PE_(pos, 2i)   = sin(pos / 10000^(2i / d_model))
  *   PE_(pos, 2i+1) = cos(pos / 10000^(2i / d_model))
  *
- * Responsive & Performance Optimizations:
- *   - Auto-height `w-full h-auto` container fitting cleanly into document flow.
- *   - High-DPI Canvas with ResizeObserver and tab visibility pause.
+ * Layout & Content Protection:
+ *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -30,7 +29,7 @@ export const PositionalEncoding: React.FC = () => {
   const lastTimeRef = useRef<number>(performance.now());
   const phaseRef = useRef<number>(0);
   const isVisibleRef = useRef<boolean>(true);
-  const sizeRef = useRef<{ width: number; height: number; dpr: number }>({ width: 400, height: 110, dpr: 1 });
+  const sizeRef = useRef<{ width: number; height: number; dpr: number }>({ width: 400, height: 120, dpr: 1 });
 
   // Dimension presets to inspect
   const dimensions = [
@@ -259,34 +258,31 @@ export const PositionalEncoding: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-4 sm:p-5 flex flex-col gap-3 font-sans gpu-layer"
+      className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer"
     >
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-2.5 gap-2 shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-1.5 gap-1.5">
         <div>
-          <h3 className="text-sm font-bold text-apple-text font-mono flex items-center gap-2">
+          <h3 className="text-xs sm:text-sm font-bold text-apple-text font-mono flex items-center gap-1.5">
             <span>Sinusoidal Positional Encoding</span>
-            <span className="text-[10px] font-mono text-apple-blue bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-              <Activity className="w-3 h-3 animate-pulse" />
+            <span className="text-[9px] font-mono text-apple-blue bg-blue-50 border border-blue-100 px-1.5 py-0.2 rounded-full font-bold flex items-center gap-0.5">
+              <Activity className="w-2.5 h-2.5 animate-pulse" />
               Eq. 3 & 4
             </span>
           </h3>
-          <p className="text-xs text-apple-secondary font-mono">
-            Continuous multi-harmonic wavelengths from 2π to 10000·2π
-          </p>
         </div>
 
-        <div className="flex items-center gap-2 font-mono text-xs flex-wrap">
+        <div className="flex items-center gap-1.5 font-mono text-xs flex-wrap">
           <button
             onClick={toggleAutoPlay}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold transition-all shadow-apple-xs ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs ${
               isPlaying
                 ? 'bg-apple-blue text-white hover:bg-blue-600'
                 : 'bg-slate-100 text-apple-secondary hover:text-apple-text hover:bg-slate-200'
             }`}
           >
-            {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 fill-current" />}
-            <span>{isPlaying ? 'Auto-Sweep Active' : 'Play Auto-Sweep'}</span>
+            {isPlaying ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 fill-current" />}
+            <span>{isPlaying ? 'Auto-Sweep' : 'Play'}</span>
           </button>
           <button
             onClick={() => {
@@ -296,13 +292,13 @@ export const PositionalEncoding: React.FC = () => {
             className="p-1 rounded-full bg-black/5 text-apple-secondary hover:text-apple-text transition-all"
             title="Reset Position to 0"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3 h-3" />
           </button>
         </div>
       </div>
 
       {/* Canvas Multi-Harmonic Wave Viewport */}
-      <div className="relative w-full h-[110px] sm:h-[125px] rounded-2xl bg-slate-50 border border-black/5 overflow-hidden shadow-inner flex items-center justify-center">
+      <div className="relative w-full h-[105px] sm:h-[115px] rounded-xl bg-slate-50 border border-black/5 overflow-hidden shadow-inner flex items-center justify-center">
         <canvas
           ref={canvasRef}
           className="w-full h-full block cursor-crosshair"
@@ -371,10 +367,10 @@ export const PositionalEncoding: React.FC = () => {
         </div>
 
         {/* Linear Transformation Explanation Bar */}
-        <div className="p-2 rounded-xl bg-blue-50/80 border border-blue-200 text-[10px] sm:text-[11px] font-mono text-apple-text flex items-center justify-between gap-2 shadow-apple-xs">
-          <div className="flex items-center gap-1.5 min-w-0">
+        <div className="p-2 rounded-xl bg-blue-50/80 border border-blue-200 text-[10px] sm:text-[11px] font-mono text-apple-text flex flex-wrap items-center justify-between gap-2 shadow-apple-xs">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <Sparkles className="w-3.5 h-3.5 text-apple-blue shrink-0" />
-            <span className="truncate">
+            <span className="leading-relaxed">
               <strong>Relative Offset Property:</strong> Linear transformation allows model to attend by relative shifts: <code className="text-apple-blue font-bold">PE_(pos+k) = R(ω_i·k)·PE_pos</code>
             </span>
           </div>

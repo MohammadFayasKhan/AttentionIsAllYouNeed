@@ -682,7 +682,7 @@ export const ParticleText: React.FC<ParticleTextProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full min-h-[160px] sm:min-h-[200px] flex items-center justify-center overflow-hidden select-none isolate gpu-layer ${className}`}
+      className={`relative w-full min-h-[140px] sm:min-h-[170px] flex items-center justify-center overflow-hidden select-none isolate gpu-layer ${className}`}
       style={style}
       aria-label={text}
     >

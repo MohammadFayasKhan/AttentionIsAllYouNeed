@@ -25,6 +25,7 @@
 import { EducationalMode } from '../data/paperData';
 import { QuizQuestion, getDynamicQuizQuestions } from '../data/quizData';
 import { Flashcard, getDynamicFlashcardsDeck } from '../data/flashcardData';
+import { humanizeText } from './humanizer';
 
 export interface ChatMessage {
   id: string;
@@ -33,6 +34,7 @@ export interface ChatMessage {
   timestamp: number;
   sourceType?: 'FROM PAPER' | 'DERIVED' | 'ILLUSTRATIVE' | 'EXTERNAL';
   isThinking?: boolean;
+  isHumanized?: boolean;
 }
 
 const SYSTEM_PROMPT_BASE = `You are Onee, a world-class AI research companion and ML educator explaining the landmark 2017 paper "Attention Is All You Need" (Vaswani et al., NIPS 2017 / arXiv:1706.03762v7).
@@ -106,8 +108,9 @@ export async function sendGroqStreamMessage(
   // If no API key or placeholder key, use deep grounded knowledge engine
   if (!apiKey || apiKey.includes('YOUR_GROQ_API_KEY')) {
     const grounded = getGroundedResearchAnswer(lastUserMessage, mode, activeChapterId);
-    await streamLocally(grounded.text);
-    return grounded;
+    const humanized = humanizeText(grounded.text, { mode, chapterId: activeChapterId });
+    await streamLocally(humanized);
+    return { text: humanized, sourceType: grounded.sourceType };
   }
 
   try {
@@ -129,19 +132,23 @@ export async function sendGroqStreamMessage(
 
     if (!response.ok) {
       const grounded = getGroundedResearchAnswer(lastUserMessage, mode, activeChapterId);
-      await streamLocally(grounded.text);
-      return grounded;
+      const humanized = humanizeText(grounded.text, { mode, chapterId: activeChapterId });
+      await streamLocally(humanized);
+      return { text: humanized, sourceType: grounded.sourceType };
     }
 
     const data = await response.json();
-    const replyText = data.choices?.[0]?.message?.content || "";
+    const rawReply = data.choices?.[0]?.message?.content || "";
 
-    if (!replyText.trim()) {
+    if (!rawReply.trim()) {
       const grounded = getGroundedResearchAnswer(lastUserMessage, mode, activeChapterId);
-      await streamLocally(grounded.text);
-      return grounded;
+      const humanized = humanizeText(grounded.text, { mode, chapterId: activeChapterId });
+      await streamLocally(humanized);
+      return { text: humanized, sourceType: grounded.sourceType };
     }
 
+    // Process through the Humanizer pipeline
+    const replyText = humanizeText(rawReply, { mode, chapterId: activeChapterId });
     await streamLocally(replyText);
 
     let sourceType: 'FROM PAPER' | 'DERIVED' | 'ILLUSTRATIVE' | 'EXTERNAL' = 'FROM PAPER';
@@ -154,8 +161,9 @@ export async function sendGroqStreamMessage(
       throw err;
     }
     const grounded = getGroundedResearchAnswer(lastUserMessage, mode, activeChapterId);
-    await streamLocally(grounded.text);
-    return grounded;
+    const humanized = humanizeText(grounded.text, { mode, chapterId: activeChapterId });
+    await streamLocally(humanized);
+    return { text: humanized, sourceType: grounded.sourceType };
   }
 }
 

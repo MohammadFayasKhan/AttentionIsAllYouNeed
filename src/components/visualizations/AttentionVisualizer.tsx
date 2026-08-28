@@ -5,14 +5,8 @@
  * Scaled Dot-Product Attention Interactive Lab (Vaswani et al. 2017, Section 3.2.1, Eq. 1):
  *   Attention(Q, K, V) = softmax(QKᵀ / √d_k)V
  *
- * Responsive & Layout Optimizations:
- *   1. Natural Auto-Height Sizing:
- *      Uses `w-full h-auto` with flex column spacing (`gap-3`) so it never clips or overlaps surrounding text.
- *   2. Responsive Token Matrix & Attention Bars:
- *      The 11 tokens wrap cleanly on mobile, and the 11-column softmax bar distribution
- *      adapts dynamically from 320px mobile through large monitors.
- *   3. Hardware-Accelerated Animation:
- *      Uses GPU-friendly spring transitions for bar heights and active token indicators.
+ * Layout & Content Protection:
+ *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -114,33 +108,30 @@ export const AttentionVisualizer: React.FC = () => {
   });
 
   return (
-    <div className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-4 sm:p-5 flex flex-col gap-3 font-sans gpu-layer">
+    <div className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer">
       {/* Header & Controls Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-2.5 gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-1.5 gap-1.5">
         <div>
-          <h3 className="text-sm font-bold text-apple-text font-mono flex items-center gap-2">
+          <h3 className="text-xs sm:text-sm font-bold text-apple-text font-mono flex items-center gap-1.5">
             <span>Scaled Dot-Product Attention Lab</span>
-            <span className="text-[10px] font-mono text-apple-blue bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full font-bold">
+            <span className="text-[9px] font-mono text-apple-blue bg-blue-50 border border-blue-100 px-1.5 py-0.2 rounded-full font-bold">
               Eq. 1
             </span>
           </h3>
-          <p className="text-xs text-apple-secondary font-mono">
-            Attention(Q, K, V) = softmax(QKᵀ / √d_k)V
-          </p>
         </div>
 
         {/* Auto-Play & Scaling Controls */}
-        <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
+        <div className="flex items-center gap-1.5 text-xs font-mono flex-wrap">
           <button
             onClick={toggleAutoPlay}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold transition-all shadow-apple-xs ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs ${
               isPlaying
                 ? 'bg-apple-blue text-white hover:bg-blue-600'
                 : 'bg-slate-100 text-apple-secondary hover:text-apple-text hover:bg-slate-200'
             }`}
           >
-            {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 fill-current" />}
-            <span>{isPlaying ? 'Auto-Sweep Active' : 'Play Auto-Sweep'}</span>
+            {isPlaying ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 fill-current" />}
+            <span>{isPlaying ? 'Auto-Sweep' : 'Play'}</span>
           </button>
 
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -268,9 +259,9 @@ export const AttentionVisualizer: React.FC = () => {
             className="accent-apple-blue bg-black/10 rounded-lg cursor-pointer h-1.5 w-24"
           />
         </div>
-        <div className="flex items-center gap-1.5 text-apple-blue font-bold text-[10px] sm:text-[11px] truncate">
+        <div className="flex items-center gap-1.5 text-apple-blue font-bold text-[10px] sm:text-[11px] flex-wrap">
           <Sparkles className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate">
+          <span className="leading-snug">
             Primary: "{tokens[selectedTokenIndex]}" ➔ "{tokens[maxTargetIdx]}" ({(processedWeights[maxTargetIdx] * 100).toFixed(0)}%)
           </span>
         </div>

@@ -3,25 +3,18 @@
  * --------------------------------------------------------------------------------
  * Architecture Overview:
  * App.tsx is the root component of the "Attention Is All You Need" interactive experience.
- * It manages the primary application states and visual layout hierarchy:
  *
- * 1. Global Educational Mode State:
- *    - Initialized strictly to 'BEGINNER' on fresh load as required.
- *    - Persistently synchronized across the top navigation, chapter scenes, living Onee dock,
- *      and the Full Onee Conversational Companion (Chat, Quiz, Flashcards, 3D Notebook, Developer).
- *
- * 2. Chapter Snap & Scrollytelling Engine:
- *    - Powered by `useChapterSnap.ts` with momentum detection, trackpad inertia protection,
- *      and keyboard navigation (Arrow keys, Page Up/Down).
- *
- * 3. Dynamic Ambient Glassmorphism:
- *    - Hardware-accelerated radial glow diffusion.
- *
- * 4. Responsive Scene Stage:
- *    - Houses `SpatialScene.tsx` with smooth, natural document flow.
- *
- * 5. Living Companion Stage:
- *    - Houses `LivingOneeStage.tsx` and stably mounted `FullOneeOverlay.tsx`.
+ * Page Shell & Layout Architecture:
+ *   1. Sticky Top Navigation Bar:
+ *      - Occupies real document layout space (64px).
+ *      - Sticky positioning ensures main content never begins underneath or overlaps the header.
+ *   2. Main Page Stage:
+ *      - Normal responsive document flow (`flex-1`).
+ *      - Pure content-driven height with locked, balanced outer vertical padding (`--page-vertical-gap`).
+ *      - Navbar → Top Gap → [Chapter | Onee Shared Grid] → Bottom Gap → Viewport/Page End.
+ *   3. Global Educational Mode State:
+ *      - Initialized to 'BEGINNER' on fresh load.
+ *      - Synchronized across the entire interface.
  */
 
 import React, { useState } from 'react';
@@ -62,9 +55,9 @@ export function App() {
   };
 
   return (
-    <div className="h-[100dvh] w-screen overflow-hidden bg-[#f5f5f7] text-[#1d1d1f] font-sans relative selection:bg-blue-500/20 selection:text-blue-900 flex flex-col justify-between">
+    <div className="w-full bg-[#f5f5f7] text-[#1d1d1f] font-sans relative selection:bg-blue-500/20 selection:text-blue-900">
       {/* Hardware-Accelerated Ambient Glow Diffusion */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 contain-strict">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 contain-strict">
         <div
           className="absolute -top-[15%] -left-[10%] w-[650px] h-[650px] rounded-full opacity-60 pointer-events-none gpu-layer"
           style={{
@@ -88,7 +81,7 @@ export function App() {
         />
       </div>
 
-      {/* Fixed Top Header Navigation (Reserved 64px Height Globally) */}
+      {/* Sticky Top Navigation Bar (Occupies real 64px document layout space) */}
       <Navigation
         activeSectionId={activeChapterId}
         onNavigate={(id) => {
@@ -121,25 +114,27 @@ export function App() {
         </div>
       </div>
 
-      {/* Discrete Chapter Scene Stage Container */}
-      <main className="w-full h-full flex-1 pt-16 relative overflow-hidden flex items-center justify-center z-10 contain-paint">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeChapter.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full h-full flex items-center justify-center overflow-hidden gpu-layer"
-          >
-            <SpatialScene
-              chapter={activeChapter}
-              isActive={true}
-              mode={mode}
-              onOpenCompanion={handleOpenCompanion}
-            />
-          </motion.div>
-        </AnimatePresence>
+      {/* Main Page Stage (Normal document flow, content determines height) */}
+      <main className="page relative z-10">
+        <div className="chapter-layout-wrapper">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeChapter.id}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full"
+            >
+              <SpatialScene
+                chapter={activeChapter}
+                isActive={true}
+                mode={mode}
+                onOpenCompanion={handleOpenCompanion}
+              />
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </main>
 
       {/* Living Onee Companion & Stably Mounted Overlay */}

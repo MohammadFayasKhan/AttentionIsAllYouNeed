@@ -5,9 +5,8 @@
  * Compares O(n) sequential recurrent dependencies (RNN/LSTM) against O(1) parallel tensor
  * computation of the Transformer Self-Attention mechanism (Vaswani et al. 2017, Section 1).
  *
- * Responsive Optimizations:
- *   - Auto-height `w-full h-auto` with clean 2-column or 1-column responsive layout.
- *   - Tokens dynamically scale and wrap cleanly across all screen sizes.
+ * Layout & Content Protection:
+ *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -41,16 +40,13 @@ export const SequentialVsParallel: React.FC<SequentialVsParallelProps> = ({ isAc
   const currentToken = tokens[Math.min(step, tokens.length - 1)];
 
   return (
-    <div className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-3 sm:p-4 flex flex-col gap-2.5 font-sans gpu-layer">
+    <div className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer">
       {/* Header Bar */}
-      <div className="flex items-center justify-between border-b border-black/5 pb-2 flex-wrap gap-1.5">
+      <div className="flex items-center justify-between border-b border-black/5 pb-1.5 flex-wrap gap-1.5">
         <div>
           <h3 className="text-xs sm:text-sm font-bold text-apple-text font-mono flex items-center gap-1.5">
             <span>Recurrence O(n) vs Self-Attention O(1)</span>
           </h3>
-          <p className="text-[10px] sm:text-[11px] text-apple-secondary font-mono">
-            Comparing sequential dependencies against parallel tensor computation
-          </p>
         </div>
 
         <div className="flex items-center gap-1 font-mono text-xs">
@@ -76,7 +72,7 @@ export const SequentialVsParallel: React.FC<SequentialVsParallelProps> = ({ isAc
       </div>
 
       {/* Side-by-Side Architectural Comparison Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 font-mono">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 font-mono w-full">
         {/* Recurrent RNN Box */}
         <div className="p-2.5 sm:p-3 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex flex-col justify-between space-y-2 relative overflow-hidden">
           {/* Box Header */}
@@ -91,7 +87,7 @@ export const SequentialVsParallel: React.FC<SequentialVsParallelProps> = ({ isAc
           </div>
 
           {/* Token Flow Visualization */}
-          <div className="py-1 relative z-10">
+          <div className="py-2 relative z-10">
             <div className="flex items-center justify-between gap-1 w-full">
               {tokens.map((token, idx) => {
                 const isProcessed = idx < step;
@@ -105,7 +101,7 @@ export const SequentialVsParallel: React.FC<SequentialVsParallelProps> = ({ isAc
                       opacity: isProcessed || isCurrent ? 1 : 0.35
                     }}
                     transition={{ duration: 0.25, ease: 'easeOut' }}
-                    className={`px-1 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-sans font-bold border transition-all text-center flex-1 min-w-0 ${
+                    className={`px-1 sm:px-2 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-[11px] font-sans font-bold border transition-all text-center flex-1 min-w-0 ${
                       isCurrent
                         ? 'bg-amber-400 text-amber-950 border-amber-500 shadow-apple-sm'
                         : isProcessed
@@ -124,16 +120,16 @@ export const SequentialVsParallel: React.FC<SequentialVsParallelProps> = ({ isAc
           </div>
 
           {/* Sequential Status Readout */}
-          <div className="p-1.5 rounded-xl bg-amber-100/70 border border-amber-200/80 text-[9px] sm:text-[10px] text-amber-900 font-sans flex items-center justify-between gap-1 relative z-10 shadow-apple-xs">
-            <span className="truncate">
+          <div className="p-2 rounded-xl bg-amber-100/70 border border-amber-200/80 text-[10px] sm:text-[11px] text-amber-900 font-sans flex flex-wrap items-center justify-between gap-1.5 relative z-10 shadow-apple-xs">
+            <span className="leading-snug">
               <strong>Step t={step < 6 ? step + 1 : 6}/6:</strong> {step < 6 ? `Waiting for h_${step} → "${currentToken}"` : 'Finished in 6 sequential steps'}
             </span>
-            <span className="text-[8px] font-mono bg-white text-amber-800 font-bold px-1.5 py-0.5 rounded border border-amber-200 shrink-0">
+            <span className="text-[9px] font-mono bg-white text-amber-800 font-bold px-2 py-0.5 rounded border border-amber-200 shrink-0">
               h_t = f(h_t-1, x_t)
             </span>
           </div>
 
-          <p className="text-[9px] sm:text-[10px] text-apple-secondary font-sans leading-tight relative z-10">
+          <p className="text-[10px] sm:text-[11px] text-apple-secondary font-sans leading-relaxed relative z-10">
             Must wait for hidden state <code className="text-amber-800 font-bold">h_(t-1)</code> before step <code className="text-amber-800 font-bold">t</code>. Prohibits parallel execution.
           </p>
         </div>
@@ -152,14 +148,14 @@ export const SequentialVsParallel: React.FC<SequentialVsParallelProps> = ({ isAc
           </div>
 
           {/* Token Flow Visualization */}
-          <div className="py-1 relative z-10">
+          <div className="py-2 relative z-10">
             <div className="flex items-center justify-between gap-1 w-full">
               {tokens.map((token, idx) => (
                 <div
                   key={idx}
-                  className="px-1 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-sans font-bold text-white shadow-apple-md text-center flex-1 min-w-0 relative overflow-hidden border border-white/40 bg-gradient-to-br from-blue-600 via-sky-500 to-indigo-600"
+                  className="px-1 sm:px-2 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-[11px] font-sans font-bold text-white shadow-apple-md text-center flex-1 min-w-0 relative overflow-hidden border border-white/40 bg-gradient-to-br from-blue-600 via-sky-500 to-indigo-600"
                 >
-                  <span className="relative z-10 drop-shadow-sm block truncate">{token}</span>
+                  <span className="relative z-10 drop-shadow-sm block">{token}</span>
                   <span className="block text-[8px] opacity-90 font-mono font-normal relative z-10">
                     t=1
                   </span>
@@ -169,24 +165,25 @@ export const SequentialVsParallel: React.FC<SequentialVsParallelProps> = ({ isAc
           </div>
 
           {/* Parallel Matrix Status Readout */}
-          <div className="p-1.5 rounded-xl bg-white/90 border border-blue-200/80 text-[10px] text-blue-950 font-sans flex items-center justify-between gap-1 relative z-10 shadow-apple-xs">
-            <span className="truncate flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-apple-blue shrink-0 animate-pulse" />
-              <strong>All 6 tokens processed at t=1:</strong> GPU parallelization
+          <div className="p-2 rounded-xl bg-white/90 border border-blue-200/80 text-[10px] sm:text-[11px] text-blue-950 font-sans flex flex-wrap items-center justify-between gap-1.5 relative z-10 shadow-apple-xs">
+            <span className="flex items-center gap-1.5 leading-snug flex-wrap">
+              <Sparkles className="w-3.5 h-3.5 text-apple-blue shrink-0 animate-pulse" />
+              <strong>All 6 tokens processed at t=1:</strong>
+              <span>GPU parallelization</span>
             </span>
-            <span className="text-[8px] font-mono bg-blue-50 text-apple-blue font-bold px-1.5 py-0.2 rounded border border-blue-200 shrink-0">
+            <span className="text-[9px] font-mono bg-blue-50 text-apple-blue font-bold px-2 py-0.5 rounded border border-blue-200 shrink-0">
               softmax(QKᵀ / √d_k)V
             </span>
           </div>
 
-          <p className="text-[9px] sm:text-[10px] text-apple-secondary font-sans leading-tight relative z-10">
+          <p className="text-[10px] sm:text-[11px] text-apple-secondary font-sans leading-relaxed relative z-10">
             Connects all positions simultaneously in a single GPU matrix multiplication operation.
           </p>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="border-t border-black/5 pt-1 text-[9px] sm:text-[10px] font-mono text-apple-secondary flex items-center justify-between flex-wrap gap-1">
+      <div className="border-t border-black/5 pt-2 text-[9px] sm:text-[10px] font-mono text-apple-secondary flex items-center justify-between flex-wrap gap-1">
         <span>Vaswani et al. (2017) Section 1</span>
         <span className="text-apple-blue font-bold">Max Path Length: Recurrent O(n) ➔ Self-Attention O(1)</span>
       </div>

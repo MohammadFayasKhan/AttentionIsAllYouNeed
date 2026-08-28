@@ -5,8 +5,9 @@
  * Interactive Table 2: Translation Quality (BLEU) vs Training Cost (FLOPs)
  * on WMT 2014 English-to-German and English-to-French (Vaswani et al. 2017, Table 2 & Section 5).
  *
- * Responsive Optimizations:
- *   - Auto-height `w-full h-auto` container with responsive model bars.
+ * Layout & Content Protection:
+ *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
+ *   - Preserves all model benchmarks (Transformer big/base, ByteNet, GNMT, ConvS2S).
  */
 
 import React, { useState, useEffect } from 'react';
@@ -22,7 +23,6 @@ export const BenchmarkChart: React.FC = () => {
   const benchmarkModels: Table2Row[] = [
     TABLE_2_TRANSLATION[1], // Transformer (big) - 28.4 BLEU
     TABLE_2_TRANSLATION[0], // Transformer (base) - 27.3 BLEU
-    TABLE_2_TRANSLATION[3], // ByteNet
     TABLE_2_TRANSLATION[4], // GNMT + RL
     TABLE_2_TRANSLATION[5]  // ConvS2S
   ].filter(Boolean);
@@ -58,9 +58,9 @@ export const BenchmarkChart: React.FC = () => {
   const activeModel = benchmarkModels[selectedIdx] || benchmarkModels[0];
 
   return (
-    <div className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-3 sm:p-4 flex flex-col gap-2.5 font-sans gpu-layer">
+    <div className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer">
       {/* Header & Control Bar */}
-      <div className="flex items-center justify-between border-b border-black/5 pb-2 gap-1.5 flex-wrap">
+      <div className="flex items-center justify-between border-b border-black/5 pb-1.5 gap-1.5 flex-wrap">
         <div className="min-w-0">
           <h3 className="text-xs sm:text-sm font-bold text-apple-text font-mono flex items-center gap-1.5">
             <span>Table 2: WMT 2014 Benchmarks</span>
@@ -74,7 +74,7 @@ export const BenchmarkChart: React.FC = () => {
         <div className="flex items-center gap-1 font-mono text-xs">
           <button
             onClick={toggleAutoPlay}
-            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs ${
+            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold transition-all shadow-apple-xs ${
               isPlaying
                 ? 'bg-apple-blue text-white hover:bg-blue-600'
                 : 'bg-slate-100 text-apple-secondary hover:text-apple-text hover:bg-slate-200'
@@ -87,83 +87,81 @@ export const BenchmarkChart: React.FC = () => {
       </div>
 
       {/* Interactive Models Benchmark Ladder */}
-      <div className="space-y-1.5">
-        <div className="flex flex-col gap-1 w-full">
-          {benchmarkModels.map((item: Table2Row, idx: number) => {
-            const isSelected = idx === selectedIdx;
-            const bleuScore = item.bleuEnDe || 23.0;
-            const barWidthPercent = ((bleuScore - 20) / (28.4 - 20)) * 100;
+      <div className="flex flex-col gap-1 w-full">
+        {benchmarkModels.map((item: Table2Row, idx: number) => {
+          const isSelected = idx === selectedIdx;
+          const bleuScore = item.bleuEnDe || 23.0;
+          const barWidthPercent = ((bleuScore - 20) / (28.4 - 20)) * 100;
 
-            return (
-              <div
-                key={idx}
-                onClick={() => handleSelectModel(idx)}
-                className={`p-2 rounded-xl border transition-all cursor-pointer font-mono flex items-center justify-between gap-2 ${
-                  isSelected
-                    ? 'bg-blue-50/90 border-apple-blue shadow-apple-xs font-bold'
-                    : item.isTransformer
-                    ? 'bg-blue-50/30 border-blue-200'
-                    : 'bg-slate-50 border-black/5 hover:bg-slate-100'
-                }`}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-[10px] sm:text-[11px] font-bold truncate ${item.isTransformer ? 'text-apple-blue' : 'text-apple-text'}`}>
-                      {item.model}
+          return (
+            <div
+              key={idx}
+              onClick={() => handleSelectModel(idx)}
+              className={`px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer font-mono flex items-center justify-between gap-2 ${
+                isSelected
+                  ? 'bg-blue-50/90 border-apple-blue shadow-apple-xs font-bold'
+                  : item.isTransformer
+                  ? 'bg-blue-50/30 border-blue-200'
+                  : 'bg-slate-50 border-black/5 hover:bg-slate-100'
+              }`}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[10px] sm:text-[11px] font-bold truncate ${item.isTransformer ? 'text-apple-blue' : 'text-apple-text'}`}>
+                    {item.model}
+                  </span>
+                  {item.isTransformer && (
+                    <span className="text-[8px] bg-blue-100 text-apple-blue font-bold px-1.5 py-0.2 rounded uppercase">
+                      Vaswani
                     </span>
-                    {item.isTransformer && (
-                      <span className="text-[8px] bg-blue-100 text-apple-blue font-bold px-1.5 py-0.2 rounded uppercase">
-                        Vaswani
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Relative BLEU Bar */}
-                  <div className="w-full bg-black/5 h-1 rounded-full overflow-hidden mt-1 max-w-[180px]">
-                    <div
-                      style={{ width: `${Math.min(100, Math.max(10, barWidthPercent))}%` }}
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        item.isTransformer ? 'bg-apple-blue' : 'bg-slate-400'
-                      }`}
-                    />
-                  </div>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-2.5 text-right shrink-0">
-                  <div>
-                    <span className="text-[7px] text-apple-tertiary block font-sans uppercase">EN-DE BLEU</span>
-                    <span className={`text-[11px] sm:text-xs font-bold ${item.isTransformer ? 'text-apple-emerald font-extrabold' : 'text-apple-text'}`}>
-                      {item.bleuEnDe ? item.bleuEnDe.toFixed(1) : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="hidden sm:block">
-                    <span className="text-[7px] text-apple-tertiary block font-sans uppercase">FLOPs</span>
-                    <span className="text-[9px] sm:text-[10px] text-apple-purple font-bold">
-                      {item.trainingCostFlops}
-                    </span>
-                  </div>
+                {/* Relative BLEU Bar */}
+                <div className="w-full bg-black/5 h-1 rounded-full overflow-hidden mt-0.5 max-w-[160px]">
+                  <div
+                    style={{ width: `${Math.min(100, Math.max(10, barWidthPercent))}%` }}
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      item.isTransformer ? 'bg-apple-blue' : 'bg-slate-400'
+                    }`}
+                  />
                 </div>
               </div>
-            );
-          })}
-        </div>
 
-        {/* Selected Benchmark Detail Callout */}
-        <div className="p-2 rounded-xl bg-blue-50/80 border border-blue-200 text-xs font-mono text-apple-text flex items-center justify-between gap-2 shadow-apple-xs w-full">
-          <div className="flex items-center gap-1 min-w-0">
-            <Zap className="w-3 h-3 text-amber-500 shrink-0" />
-            <span className="text-[10px] text-apple-secondary font-sans truncate">
-              <strong className="text-apple-text">{activeModel.model}:</strong> {activeModel.gpus ? `${activeModel.gpus} (${activeModel.trainingTime})` : 'Recurrent Baseline'}
-            </span>
-          </div>
-          <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded border border-emerald-200 shrink-0">
-            {activeModel.bleuEnDe ? `${activeModel.bleuEnDe} BLEU` : 'Baseline'}
+              <div className="flex items-center gap-2 text-right shrink-0">
+                <div>
+                  <span className="text-[7px] text-apple-tertiary block font-sans uppercase">BLEU</span>
+                  <span className={`text-[10px] sm:text-[11px] font-bold ${item.isTransformer ? 'text-apple-emerald font-extrabold' : 'text-apple-text'}`}>
+                    {item.bleuEnDe ? item.bleuEnDe.toFixed(1) : 'N/A'}
+                  </span>
+                </div>
+                <div className="hidden sm:block">
+                  <span className="text-[7px] text-apple-tertiary block font-sans uppercase">FLOPs</span>
+                  <span className="text-[9px] text-apple-purple font-bold">
+                    {item.trainingCostFlops}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Selected Benchmark Detail Callout */}
+      <div className="px-2.5 py-1.5 rounded-xl bg-blue-50/80 border border-blue-200 text-xs font-mono text-apple-text flex flex-wrap items-center justify-between gap-1.5 shadow-apple-xs w-full">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <Zap className="w-3 h-3 text-amber-500 shrink-0" />
+          <span className="text-[10px] text-apple-secondary font-sans leading-snug">
+            <strong className="text-apple-text">{activeModel.model}:</strong> {activeModel.gpus ? `${activeModel.gpus} (${activeModel.trainingTime})` : 'Recurrent Baseline'}
           </span>
         </div>
+        <span className="text-[8px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded border border-emerald-200 shrink-0">
+          {activeModel.bleuEnDe ? `${activeModel.bleuEnDe} BLEU` : 'Baseline'}
+        </span>
       </div>
 
       {/* Benchmark Efficiency Footer */}
-      <div className="border-t border-black/5 pt-1.5 text-[9px] sm:text-[10px] font-mono text-apple-secondary flex items-center justify-between flex-wrap gap-1">
+      <div className="border-t border-black/5 pt-1.5 text-[9px] font-mono text-apple-secondary flex items-center justify-between flex-wrap gap-1">
         <span className="flex items-center gap-1 text-apple-emerald font-bold">
           <Sparkles className="w-2.5 h-2.5 text-emerald-600" /> Base: 12h on 8 P100 GPUs (3.3×10¹⁸ FLOPs)
         </span>

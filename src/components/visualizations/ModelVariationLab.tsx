@@ -7,8 +7,8 @@
  *   - Key dimensionality d_k and d_v variations.
  *   - Model size & dropout variations.
  *
- * Responsive Optimizations:
- *   - Auto-height `w-full h-auto` container with responsive 2-column or 1-column grid.
+ * Layout & Content Protection:
+ *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -55,9 +55,9 @@ export const ModelVariationLab: React.FC = () => {
   const selectedSetting = ablationRows[selectedIdx] || ablationRows[0];
 
   return (
-    <div className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-3 sm:p-4 flex flex-col gap-2.5 font-sans gpu-layer">
+    <div className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer">
       {/* Header & Control Bar */}
-      <div className="flex items-center justify-between border-b border-black/5 pb-2 gap-1.5 flex-wrap">
+      <div className="flex items-center justify-between border-b border-black/5 pb-1.5 gap-1.5 flex-wrap">
         <div className="min-w-0">
           <h3 className="text-xs sm:text-sm font-bold text-apple-text font-mono flex items-center gap-1.5">
             <span>Table 3: Model Variations</span>
@@ -84,67 +84,65 @@ export const ModelVariationLab: React.FC = () => {
       </div>
 
       {/* Interactive Ablation Grid */}
-      <div className="space-y-1.5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 w-full">
-          {ablationRows.map((varItem: Table3Row, idx: number) => {
-            const isSelected = idx === selectedIdx;
-            const isBaseline = varItem.setting.includes('Base');
-            const isDrop = varItem.devBLEU < 25.5;
-            const isGain = varItem.devBLEU > 26.0;
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+        {ablationRows.map((varItem: Table3Row, idx: number) => {
+          const isSelected = idx === selectedIdx;
+          const isBaseline = varItem.setting.includes('Base');
+          const isDrop = varItem.devBLEU < 25.5;
+          const isGain = varItem.devBLEU > 26.0;
 
-            return (
-              <div
-                key={idx}
-                onClick={() => handleSelectSetting(idx)}
-                className={`p-2 rounded-xl border transition-all cursor-pointer font-mono flex flex-col justify-between ${
-                  isSelected
-                    ? 'bg-blue-50/90 border-apple-blue shadow-apple-xs font-bold'
-                    : isBaseline
-                    ? 'bg-blue-50/30 border-blue-200'
-                    : 'bg-slate-50 border-black/5 hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-1 mb-0.5">
-                  <span className={`text-[10px] sm:text-[11px] font-bold truncate ${isSelected ? 'text-apple-blue' : 'text-apple-text'}`}>
-                    {varItem.setting}
-                  </span>
-                  <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded font-bold shrink-0 flex items-center gap-0.5 ${
-                    isGain
-                      ? 'bg-emerald-100 text-emerald-900'
-                      : isDrop
-                      ? 'bg-rose-100 text-rose-900'
-                      : 'bg-blue-100 text-apple-blue'
-                  }`}>
-                    {isGain && <TrendingUp className="w-2 h-2" />}
-                    {isDrop && <TrendingDown className="w-2 h-2" />}
-                    {varItem.devBLEU} BLEU
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-[8px] sm:text-[9px] text-apple-secondary font-sans">
-                  <span>PPL: {varItem.devPPL}</span>
-                  <span>{varItem.paramsM}M Params</span>
-                </div>
+          return (
+            <div
+              key={idx}
+              onClick={() => handleSelectSetting(idx)}
+              className={`p-2.5 rounded-xl border transition-all cursor-pointer font-mono flex flex-col justify-between ${
+                isSelected
+                  ? 'bg-blue-50/90 border-apple-blue shadow-apple-xs font-bold'
+                  : isBaseline
+                  ? 'bg-blue-50/30 border-blue-200'
+                  : 'bg-slate-50 border-black/5 hover:bg-slate-100'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <span className={`text-[10px] sm:text-[11px] font-bold truncate ${isSelected ? 'text-apple-blue' : 'text-apple-text'}`}>
+                  {varItem.setting}
+                </span>
+                <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded font-bold shrink-0 flex items-center gap-0.5 ${
+                  isGain
+                    ? 'bg-emerald-100 text-emerald-900'
+                    : isDrop
+                    ? 'bg-rose-100 text-rose-900'
+                    : 'bg-blue-100 text-apple-blue'
+                }`}>
+                  {isGain && <TrendingUp className="w-2 h-2" />}
+                  {isDrop && <TrendingDown className="w-2 h-2" />}
+                  {varItem.devBLEU} BLEU
+                </span>
               </div>
-            );
-          })}
-        </div>
+              <div className="flex items-center justify-between text-[8px] sm:text-[9px] text-apple-secondary font-sans">
+                <span>PPL: {varItem.devPPL}</span>
+                <span>{varItem.paramsM}M Params</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-        {/* Selected Setting Finding Card */}
-        <div className="p-2 rounded-xl bg-blue-50/80 border border-blue-200 font-mono text-xs text-apple-text flex items-center justify-between gap-2 shadow-apple-xs w-full">
-          <div className="flex items-center gap-1 min-w-0">
-            <CheckCircle2 className="w-3 h-3 text-apple-blue shrink-0" />
-            <span className="text-[10px] text-apple-secondary font-sans truncate">
-              <strong className="text-apple-text">{selectedSetting.setting}:</strong> {selectedSetting.findingNote}
-            </span>
-          </div>
-          <span className="text-[9px] bg-white text-apple-blue font-bold px-1.5 py-0.2 rounded border border-blue-200 shrink-0">
-            {selectedSetting.devBLEU} BLEU
+      {/* Selected Setting Finding Card */}
+      <div className="p-2.5 rounded-xl bg-blue-50/80 border border-blue-200 font-mono text-xs text-apple-text flex flex-wrap items-center justify-between gap-2 shadow-apple-xs w-full">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <CheckCircle2 className="w-3.5 h-3.5 text-apple-blue shrink-0" />
+          <span className="text-[10px] sm:text-[11px] text-apple-secondary font-sans leading-relaxed">
+            <strong className="text-apple-text">{selectedSetting.setting}:</strong> {selectedSetting.findingNote}
           </span>
         </div>
+        <span className="text-[9px] bg-white text-apple-blue font-bold px-1.5 py-0.5 rounded border border-blue-200 shrink-0">
+          {selectedSetting.devBLEU} BLEU
+        </span>
       </div>
 
       {/* Table 3 Footer */}
-      <div className="border-t border-black/5 pt-1.5 text-[9px] sm:text-[10px] font-mono text-apple-secondary flex items-center justify-between flex-wrap gap-1">
+      <div className="border-t border-black/5 pt-2 text-[9px] sm:text-[10px] font-mono text-apple-secondary flex items-center justify-between flex-wrap gap-1">
         <span className="flex items-center gap-1 text-apple-blue font-bold">
           <Sparkles className="w-2.5 h-2.5 text-apple-blue" /> Evaluated on English-to-German news-test2013
         </span>

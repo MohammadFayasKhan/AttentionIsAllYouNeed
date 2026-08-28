@@ -47,6 +47,7 @@ export function useChapterSnap(sectionIds: string[], initialIndex = 0) {
     (index: number) => {
       const clamped = Math.max(0, Math.min(totalChapters - 1, index));
       if (clamped !== activeIndexRef.current) {
+        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
         setActiveIndex(clamped);
         oneeBridge.emit('chapter_change');
       }
@@ -94,6 +95,19 @@ export function useChapterSnap(sectionIds: string[], initialIndex = 0) {
           if (canScrollDown || canScrollUp) {
             return;
           }
+        }
+      }
+
+      // Allow natural document scrolling if page content is taller than viewport
+      const docScrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+      const docScrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
+      const docClientHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+      if (docScrollHeight > docClientHeight + 8) {
+        const canScrollDocDown = e.deltaY > 0 && docScrollTop + docClientHeight < docScrollHeight - 6;
+        const canScrollDocUp = e.deltaY < 0 && docScrollTop > 6;
+        if (canScrollDocDown || canScrollDocUp) {
+          deltaAccRef.current = 0; // Clear accumulated delta while actively scrolling document
+          return; // Let natural browser scrolling reveal full chapter content and bottom gap
         }
       }
 
@@ -170,6 +184,18 @@ export function useChapterSnap(sectionIds: string[], initialIndex = 0) {
       const touchEndX = e.changedTouches[0].clientX;
       const deltaY = touchStartY - touchEndY;
       const deltaX = touchStartX - touchEndX;
+
+      // Allow touch scrolling document if taller than viewport
+      const docScrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+      const docScrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
+      const docClientHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+      if (docScrollHeight > docClientHeight + 6) {
+        const canScrollDocDown = deltaY > 0 && docScrollTop + docClientHeight < docScrollHeight - 4;
+        const canScrollDocUp = deltaY < 0 && docScrollTop > 4;
+        if (canScrollDocDown || canScrollDocUp) {
+          return;
+        }
+      }
 
       if (Math.abs(deltaY) > 55 && Math.abs(deltaY) > Math.abs(deltaX) * 1.25) {
         lastTriggerTimeRef.current = now;

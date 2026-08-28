@@ -5,9 +5,8 @@
  * Interactive Subspace Explorer for Multi-Head Attention (Vaswani et al. 2017, Section 3.2.2, Eq. 2):
  *   MultiHead(Q,K,V) = Concat(head_1, ..., head_h)W^O
  *
- * Responsive & Layout Optimizations:
- *   - Auto-height `w-full h-auto` with clean flex gap spacing.
- *   - Heads grid adapts smoothly across 4-column (mobile) and 8-column (tablet/desktop) configurations.
+ * Layout & Content Protection:
+ *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -134,32 +133,30 @@ export const MultiHeadVisualizer: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-4 sm:p-5 flex flex-col gap-3 font-sans gpu-layer">
+    <div className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer">
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-2.5 gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-1.5 gap-1.5">
         <div>
-          <h3 className="text-sm font-bold text-apple-text font-mono flex items-center gap-2">
-            <span>Multi-Head Attention Subspace Explorer</span>
-            <span className="text-[10px] font-mono text-apple-blue bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full font-bold">
+          <h3 className="text-xs sm:text-sm font-bold text-apple-text font-mono flex items-center gap-1.5">
+            <span>Multi-Head Attention Subspaces</span>
+            <span className="text-[9px] font-mono text-apple-blue bg-blue-50 border border-blue-100 px-1.5 py-0.2 rounded-full font-bold flex items-center gap-0.5">
+              <Layers className="w-2.5 h-2.5" />
               Eq. 2
             </span>
           </h3>
-          <p className="text-xs text-apple-secondary font-mono">
-            MultiHead(Q,K,V) = Concat(head_1, ..., head_h)W^O
-          </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
+        <div className="flex items-center gap-1.5 text-xs font-mono flex-wrap">
           <button
             onClick={toggleAutoPlay}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold transition-all shadow-apple-xs ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs ${
               isPlaying
                 ? 'bg-apple-blue text-white hover:bg-blue-600'
                 : 'bg-slate-100 text-apple-secondary hover:text-apple-text hover:bg-slate-200'
             }`}
           >
-            {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 fill-current" />}
-            <span>{isPlaying ? 'Auto-Sweep Active' : 'Play Auto-Sweep'}</span>
+            {isPlaying ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 fill-current" />}
+            <span>{isPlaying ? 'Auto-Sweep' : 'Play'}</span>
           </button>
 
           <div className="flex items-center gap-1.5 text-xs font-mono text-apple-blue bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full font-bold">
@@ -169,69 +166,67 @@ export const MultiHeadVisualizer: React.FC = () => {
         </div>
       </div>
 
-      {/* Interactive Heads Matrix Stream */}
-      <div className="space-y-2.5">
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
-          {Array.from({ length: headCount }).map((_, idx) => {
-            const isSelected = idx === activeHeadIndex;
+      {/* Interactive Heads Matrix */}
+      <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5 w-full">
+        {Array.from({ length: headCount }).map((_, idx) => {
+          const isSelected = idx === activeHeadIndex;
 
-            return (
-              <motion.button
-                key={idx}
-                onClick={() => handleSelectHead(idx)}
-                whileHover={{ scale: 1.06 }}
-                whileTap={{ scale: 0.94 }}
-                animate={{
-                  scale: isSelected ? 1.04 : 1
-                }}
-                transition={{ duration: 0.2 }}
-                className={`py-2 px-1.5 rounded-2xl text-xs font-mono font-bold transition-all border text-center relative ${
-                  isSelected
-                    ? 'bg-apple-blue text-white border-apple-blue shadow-apple-md z-10'
-                    : 'bg-slate-50 text-apple-text border-black/5 hover:bg-black/5'
-                }`}
-              >
-                H{idx + 1}
-                {isSelected && (
-                  <span className="absolute -top-1 -right-0.5 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
-                  </span>
-                )}
-              </motion.button>
-            );
-          })}
-        </div>
+          return (
+            <motion.button
+              key={idx}
+              onClick={() => handleSelectHead(idx)}
+              whileHover={{ scale: 1.06 }}
+              whileTap={{ scale: 0.94 }}
+              animate={{
+                scale: isSelected ? 1.04 : 1
+              }}
+              transition={{ duration: 0.2 }}
+              className={`py-2 px-1.5 rounded-2xl text-xs font-mono font-bold transition-all border text-center relative ${
+                isSelected
+                  ? 'bg-apple-blue text-white border-apple-blue shadow-apple-md z-10'
+                  : 'bg-slate-50 text-apple-text border-black/5 hover:bg-black/5'
+              }`}
+            >
+              H{idx + 1}
+              {isSelected && (
+                <span className="absolute -top-1 -right-0.5 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+                </span>
+              )}
+            </motion.button>
+          );
+        })}
+      </div>
 
-        {/* Selected Head Subspace Details Card */}
-        <div className={`p-3 rounded-2xl ${currentHead.bgLight} border ${currentHead.borderLight} space-y-2 shadow-apple-xs font-mono text-xs`}>
-          <div className="flex items-center justify-between flex-wrap gap-1">
-            <div className="flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-apple-blue" />
-              <span className={`font-bold text-[11px] ${currentHead.color}`}>
-                {currentHead.name}
-              </span>
-            </div>
-            <span className="text-apple-tertiary text-[10px] bg-white/80 px-2 py-0.5 rounded-md border border-black/5 font-semibold">
-              Subspace dim: d_k = d_v = {d_k}
+      {/* Selected Head Subspace Details Card */}
+      <div className={`p-3.5 rounded-2xl ${currentHead.bgLight} border ${currentHead.borderLight} space-y-2 shadow-apple-xs font-mono text-xs w-full`}>
+        <div className="flex items-center justify-between flex-wrap gap-1">
+          <div className="flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-apple-blue" />
+            <span className={`font-bold text-[11px] ${currentHead.color}`}>
+              {currentHead.name}
             </span>
           </div>
+          <span className="text-apple-tertiary text-[10px] bg-white/80 px-2 py-0.5 rounded-md border border-black/5 font-semibold">
+            Subspace dim: d_k = d_v = {d_k}
+          </span>
+        </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-black/5">
-            <p className="text-apple-secondary text-[11px] font-sans">
-              Specialized Role: <strong className="text-apple-text">{currentHead.focus}</strong>
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-black/5">
+          <p className="text-apple-secondary text-[11px] font-sans">
+            Specialized Role: <strong className="text-apple-text">{currentHead.focus}</strong>
+          </p>
 
-            <div className="flex items-center gap-2 bg-white/90 px-2.5 py-1 rounded-xl border border-black/5 shadow-apple-xs shrink-0">
-              <span className="text-apple-blue font-bold text-[10px]">Active Focus:</span>
-              <span className="px-1.5 py-0.5 rounded bg-blue-100 text-apple-blue font-bold text-[10px]">
-                "{currentHead.tokens[0]}"
-              </span>
-              <span className="text-apple-tertiary text-[10px]">➔</span>
-              <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold text-[10px]">
-                "{currentHead.tokens[1]}"
-              </span>
-            </div>
+          <div className="flex items-center gap-2 bg-white/90 px-2.5 py-1 rounded-xl border border-black/5 shadow-apple-xs">
+            <span className="text-apple-blue font-bold text-[10px]">Active Focus:</span>
+            <span className="px-1.5 py-0.5 rounded bg-blue-100 text-apple-blue font-bold text-[10px]">
+              "{currentHead.tokens[0]}"
+            </span>
+            <span className="text-apple-tertiary text-[10px]">➔</span>
+            <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold text-[10px]">
+              "{currentHead.tokens[1]}"
+            </span>
           </div>
         </div>
       </div>

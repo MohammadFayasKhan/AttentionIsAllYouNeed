@@ -7,13 +7,12 @@
  *   - Decoder (N=6): Masked Multi-Head Attention + Encoder-Decoder Cross Attention + Feed-Forward.
  *   - Residual connections: LayerNorm(x + SubLayer(x))
  *
- * Responsive Optimizations:
- *   - Uses auto-height `w-full h-auto` with flexible grid and wrapping cards.
+ * Layout & Content Protection:
+ *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
  */
 
 import React, { useState, useEffect } from 'react';
 import { oneeBridge } from '../../lib/oneeEvents';
-import { motion } from 'framer-motion';
 import { Layers, Zap, Play, Pause, Sparkles, ShieldCheck, Cpu } from 'lucide-react';
 
 interface SublayerInfo {
@@ -168,9 +167,9 @@ export const TransformerArchitecture: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-3 sm:p-4 flex flex-col gap-2.5 font-sans gpu-layer">
+    <div className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer">
       {/* Header & Control Bar */}
-      <div className="flex items-center justify-between border-b border-black/5 pb-2 gap-1.5 flex-wrap">
+      <div className="flex items-center justify-between border-b border-black/5 pb-1.5 gap-1.5 flex-wrap">
         <div>
           <h3 className="text-xs sm:text-sm font-bold text-apple-text font-mono flex items-center gap-1.5">
             <span>Transformer Layer Reconstruction</span>
@@ -220,68 +219,66 @@ export const TransformerArchitecture: React.FC = () => {
       </div>
 
       {/* Interactive Sublayer Tensor Flow Ladder */}
-      <div className="space-y-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 w-full">
-          {currentSublayers.map((sub, idx) => {
-            const isSelected = idx === activeSublayerIdx;
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+        {currentSublayers.map((sub, idx) => {
+          const isSelected = idx === activeSublayerIdx;
 
-            return (
-              <button
-                key={sub.id}
-                onClick={() => handleSelectSublayer(idx)}
-                className={`p-2 rounded-xl flex items-center justify-between font-mono text-xs transition-all border text-left ${
-                  isSelected
-                    ? `${sub.bgLight} border-apple-blue font-bold shadow-apple-xs`
-                    : 'bg-slate-50 border-black/5 hover:bg-slate-100 text-apple-text'
-                }`}
-              >
-                <div className="flex items-center gap-1.5 min-w-0">
-                  {sub.icon === 'ffn' ? (
-                    <Zap className={`w-3 h-3 shrink-0 ${isSelected ? sub.color : 'text-amber-500'}`} />
-                  ) : (
-                    <Layers className={`w-3 h-3 shrink-0 ${isSelected ? sub.color : 'text-apple-blue'}`} />
-                  )}
-                  <span className={`text-[10px] sm:text-[11px] truncate ${isSelected ? sub.color : 'text-apple-text'}`}>
-                    {sub.name}
-                  </span>
-                </div>
-
-                <span className="text-[9px] text-apple-secondary bg-white px-1.5 py-0.2 rounded border border-black/5 font-semibold shrink-0 ml-1">
-                  {sub.dim}
+          return (
+            <button
+              key={sub.id}
+              onClick={() => handleSelectSublayer(idx)}
+              className={`p-2.5 rounded-xl flex items-center justify-between font-mono text-xs transition-all border text-left ${
+                isSelected
+                  ? `${sub.bgLight} border-apple-blue font-bold shadow-apple-xs`
+                  : 'bg-slate-50 border-black/5 hover:bg-slate-100 text-apple-text'
+              }`}
+            >
+              <div className="flex items-center gap-1.5 min-w-0">
+                {sub.icon === 'ffn' ? (
+                  <Zap className={`w-3.5 h-3.5 shrink-0 ${isSelected ? sub.color : 'text-amber-500'}`} />
+                ) : (
+                  <Layers className={`w-3.5 h-3.5 shrink-0 ${isSelected ? sub.color : 'text-apple-blue'}`} />
+                )}
+                <span className={`text-[10px] sm:text-[11px] truncate ${isSelected ? sub.color : 'text-apple-text'}`}>
+                  {sub.name}
                 </span>
-              </button>
-            );
-          })}
-        </div>
+              </div>
 
-        {/* Selected Sublayer Mathematical Breakdown Card */}
-        <div className={`p-2.5 rounded-xl ${activeSublayer.bgLight} border ${activeSublayer.borderLight} space-y-1 shadow-apple-xs font-mono text-xs w-full`}>
-          <div className="flex items-center justify-between flex-wrap gap-1">
-            <div className="flex items-center gap-1 font-bold">
-              <Sparkles className="w-3 h-3 text-apple-blue" />
-              <span className={`text-[10px] sm:text-[11px] ${activeSublayer.color}`}>
-                {activeSublayer.name}
+              <span className="text-[9px] text-apple-secondary bg-white px-1.5 py-0.2 rounded border border-black/5 font-semibold shrink-0 ml-1">
+                {sub.dim}
               </span>
-            </div>
-            <span className="text-[9px] text-apple-text bg-white/90 px-1.5 py-0.2 rounded border border-black/5 font-mono font-semibold truncate">
-              {activeSublayer.formula}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Selected Sublayer Mathematical Breakdown Card */}
+      <div className={`p-3 rounded-xl ${activeSublayer.bgLight} border ${activeSublayer.borderLight} space-y-1.5 shadow-apple-xs font-mono text-xs w-full`}>
+        <div className="flex items-center justify-between flex-wrap gap-1.5">
+          <div className="flex items-center gap-1.5 font-bold">
+            <Sparkles className="w-3.5 h-3.5 text-apple-blue" />
+            <span className={`text-[10px] sm:text-[11px] ${activeSublayer.color}`}>
+              {activeSublayer.name}
             </span>
           </div>
-
-          <p className="text-apple-secondary text-[10px] font-sans leading-tight">
-            {activeSublayer.description}
-          </p>
+          <span className="text-[9px] text-apple-text bg-white/90 px-2 py-0.5 rounded border border-black/5 font-mono font-semibold">
+            {activeSublayer.formula}
+          </span>
         </div>
+
+        <p className="text-apple-secondary text-[10px] sm:text-[11px] font-sans leading-relaxed">
+          {activeSublayer.description}
+        </p>
       </div>
 
       {/* Architecture Specs Footer */}
-      <div className="border-t border-black/5 pt-1.5 flex items-center justify-between text-[10px] font-mono text-apple-secondary flex-wrap gap-1">
+      <div className="border-t border-black/5 pt-2 flex items-center justify-between text-[10px] font-mono text-apple-secondary flex-wrap gap-1">
         <div className="flex items-center gap-1">
-          <ShieldCheck className="w-3 h-3 text-emerald-600" />
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
           <span>Residual: <strong className="text-apple-text font-bold">LayerNorm(x + SubLayer(x))</strong></span>
         </div>
         <div className="flex items-center gap-1 text-apple-blue font-semibold">
-          <Cpu className="w-3 h-3" />
+          <Cpu className="w-3.5 h-3.5" />
           <span>Shape: <strong className="text-apple-text">d_model=512, d_ff=2048</strong></span>
         </div>
       </div>

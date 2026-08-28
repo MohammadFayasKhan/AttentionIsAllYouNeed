@@ -5,8 +5,8 @@
  * Interactive Table 1: Maximum Path Lengths, Per-Layer Complexity, and Minimum
  * Sequential Operations across Layer Types (Vaswani et al. 2017, Table 1 & Section 4).
  *
- * Responsive Optimizations:
- *   - Auto-height `w-full h-auto` with flexible grid and responsive tradeoff cards.
+ * Layout & Content Protection:
+ *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -56,9 +56,9 @@ export const ComplexityComparison: React.FC = () => {
   const activeRow = TABLE_1_COMPLEXITY[selectedRowIdx];
 
   return (
-    <div className="w-full h-auto rounded-3xl bg-white/95 border border-black/10 shadow-apple-md p-3 sm:p-4 flex flex-col gap-2.5 font-sans gpu-layer">
+    <div className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer">
       {/* Header & Control Bar */}
-      <div className="flex items-center justify-between border-b border-black/5 pb-2 gap-1.5 flex-wrap">
+      <div className="flex items-center justify-between border-b border-black/5 pb-1.5 gap-1.5 flex-wrap">
         <div className="min-w-0">
           <h3 className="text-xs sm:text-sm font-bold text-apple-text font-mono flex items-center gap-1.5">
             <span>Table 1: Layer Complexity</span>
@@ -101,69 +101,67 @@ export const ComplexityComparison: React.FC = () => {
       </div>
 
       {/* Interactive Layer Rows Grid */}
-      <div className="space-y-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 w-full">
-          {TABLE_1_COMPLEXITY.map((row, idx) => {
-            const isSelfAttention = row.layerType.includes("Self-Attention");
-            const isSelected = idx === selectedRowIdx;
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+        {TABLE_1_COMPLEXITY.map((row, idx) => {
+          const isSelfAttention = row.layerType.includes("Self-Attention");
+          const isSelected = idx === selectedRowIdx;
 
-            const metricValue =
-              selectedMetric === 'complexity'
-                ? row.complexityPerLayer
-                : selectedMetric === 'sequential'
-                ? row.sequentialOps
-                : row.maxPathLength;
+          const metricValue =
+            selectedMetric === 'complexity'
+              ? row.complexityPerLayer
+              : selectedMetric === 'sequential'
+              ? row.sequentialOps
+              : row.maxPathLength;
 
-            return (
-              <div
-                key={idx}
-                onClick={() => setSelectedRowIdx(idx)}
-                className={`p-2 rounded-xl border transition-all cursor-pointer font-mono flex flex-col justify-between ${
-                  isSelected
-                    ? 'bg-blue-50/90 border-apple-blue font-bold shadow-apple-xs'
-                    : isSelfAttention
-                    ? 'bg-blue-50/40 border-blue-200'
-                    : 'bg-slate-50 border-black/5 hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-1 mb-0.5">
-                  <span className={`text-[10px] sm:text-[11px] font-bold truncate ${isSelfAttention ? 'text-apple-blue' : 'text-apple-text'}`}>
-                    {row.layerType}
-                  </span>
-                  <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded font-bold shrink-0 ${
-                    selectedMetric === 'complexity'
-                      ? 'bg-blue-100 text-apple-blue'
-                      : selectedMetric === 'sequential'
-                      ? 'bg-amber-100 text-amber-900'
-                      : 'bg-purple-100 text-purple-900'
-                  }`}>
-                    {metricValue}
-                  </span>
-                </div>
-                <p className="text-[9px] sm:text-[10px] text-apple-secondary font-sans leading-tight truncate">
-                  {row.notes}
-                </p>
+          return (
+            <div
+              key={idx}
+              onClick={() => setSelectedRowIdx(idx)}
+              className={`p-2.5 rounded-xl border transition-all cursor-pointer font-mono flex flex-col justify-between ${
+                isSelected
+                  ? 'bg-blue-50/90 border-apple-blue font-bold shadow-apple-xs'
+                  : isSelfAttention
+                  ? 'bg-blue-50/40 border-blue-200'
+                  : 'bg-slate-50 border-black/5 hover:bg-slate-100'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <span className={`text-[10px] sm:text-[11px] font-bold truncate ${isSelfAttention ? 'text-apple-blue' : 'text-apple-text'}`}>
+                  {row.layerType}
+                </span>
+                <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded font-bold shrink-0 ${
+                  selectedMetric === 'complexity'
+                    ? 'bg-blue-100 text-apple-blue'
+                    : selectedMetric === 'sequential'
+                    ? 'bg-amber-100 text-amber-900'
+                    : 'bg-purple-100 text-purple-900'
+                }`}>
+                  {metricValue}
+                </span>
               </div>
-            );
-          })}
-        </div>
+              <p className="text-[9px] sm:text-[10px] text-apple-secondary font-sans leading-tight">
+                {row.notes}
+              </p>
+            </div>
+          );
+        })}
+      </div>
 
-        {/* Selected Layer Tradeoff Card */}
-        <div className="p-2 rounded-xl bg-blue-50/80 border border-blue-200 text-xs font-mono text-apple-text flex items-center justify-between gap-2 shadow-apple-xs w-full">
-          <div className="flex items-center gap-1 min-w-0">
-            <Sparkles className="w-3 h-3 text-apple-blue shrink-0" />
-            <span className="text-[10px] text-apple-secondary font-sans truncate">
-              <strong className="text-apple-text">{activeRow.layerType}:</strong> {activeRow.notes}
-            </span>
-          </div>
-          <span className="text-[9px] bg-white text-apple-blue font-bold px-1.5 py-0.2 rounded border border-blue-200 shrink-0">
-            O(1) Steps
+      {/* Selected Layer Tradeoff Card */}
+      <div className="p-2.5 rounded-xl bg-blue-50/80 border border-blue-200 text-xs font-mono text-apple-text flex flex-wrap items-center justify-between gap-2 shadow-apple-xs w-full">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <Sparkles className="w-3.5 h-3.5 text-apple-blue shrink-0" />
+          <span className="text-[10px] sm:text-[11px] text-apple-secondary font-sans leading-relaxed">
+            <strong className="text-apple-text">{activeRow.layerType}:</strong> {activeRow.notes}
           </span>
         </div>
+        <span className="text-[9px] bg-white text-apple-blue font-bold px-1.5 py-0.5 rounded border border-blue-200 shrink-0">
+          O(1) Steps
+        </span>
       </div>
 
       {/* Asymptotic Variables Footer */}
-      <div className="border-t border-black/5 pt-1.5 text-[9px] sm:text-[10px] font-mono text-apple-secondary flex items-center justify-between flex-wrap gap-1">
+      <div className="border-t border-black/5 pt-2 text-[9px] sm:text-[10px] font-mono text-apple-secondary flex items-center justify-between flex-wrap gap-1">
         <span>n = length | d = dimension | k = kernel</span>
         <span className="text-apple-blue font-bold">n &lt; d (Machine Translation)</span>
       </div>
