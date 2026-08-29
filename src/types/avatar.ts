@@ -1,3 +1,19 @@
+/**
+ * avatar.ts
+ * ─────────────────────────────────────────────────────────────────
+ * Type Definitions for Onee Avatar Animations, Expressions, and Imperative Handles
+ *
+ * Project: AttentionIsAllYouNeed
+ * Author: Mohammad Fayas Khan (B.Tech CSE AI/ML student at LPU)
+ *
+ * Architecture:
+ *   - `VALID_ANIMATIONS`: Procedural states (idle, listening, thinking, working, celebrate, etc.)
+ *     governing bodily micro-motions and gaze patterns.
+ *   - `VALID_EXPRESSIONS`: Facial expression variants mapped to SVG eye shapes and eyebrow angles.
+ *   - `AvatarRefHandle`: Imperative ref interface exposing `.play()`, `.setExpression()`, `.stop()`,
+ *     allowing UI events (quiz right/wrong, slider scrubbing, token click) to trigger live reactions.
+ */
+
 export const VALID_ANIMATIONS = [
   'sleeping',
   'waking',

@@ -1,8 +1,17 @@
 /**
  * ChapterRail.tsx
  * ─────────────────────────────────────────────────────────────────
- * Desktop left-margin chapter dot indicator with accessible keyboard
- * navigation and restrained hover preview cards.
+ * Desktop Chapter Dot Indicator Rail & Quick Navigator
+ *
+ * Project: AttentionIsAllYouNeed
+ * Built by: Mohammad Fayas Khan (3rd-year B.Tech CSE AI/ML student at LPU)
+ *
+ * Architecture & Features:
+ *   - Fixed left-margin rail visible on extra-large screens (xl:).
+ *   - Visual indicator showing current chapter position (e.g. `03 / 11`).
+ *   - Interactive pill/dot items with active styling and hover preview cards.
+ *   - Hover card renders chapter eyebrow, title, and subtitle via Framer Motion.
+ *   - Click triggers smooth chapter transition to the selected chapter.
  */
 
 import React, { useState } from 'react';

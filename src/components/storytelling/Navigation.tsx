@@ -1,17 +1,18 @@
 /**
  * Navigation.tsx
- * --------------------------------------------------------------------------------
- * Architecture Overview:
- * Fixed top navigation bar following Apple-inspired design principles (frosted
- * backdrop-blur-2xl, subtle borders, mono badges).
+ * ─────────────────────────────────────────────────────────────────
+ * Fixed Top Navigation Header & Global Control Bar
+ *
+ * Project: AttentionIsAllYouNeed
+ * Built by: Mohammad Fayas Khan (3rd-year B.Tech CSE AI/ML student at LPU)
  *
  * Responsibilities:
- *   1. Brand & Paper Identity: Quick navigation to Chapter 00.
+ *   1. Paper Identity: Quick navigation to Chapter 00 ("Attention Is All You Need").
  *   2. Global Synchronized Difficulty Segmented Control:
- *      Allows learner to toggle between BEGINNER, INTERMEDIATE, TECHNICAL, and PAPER modes.
- *   3. Accessible Chapter Dropdown: Fast navigation across all 11 paper chapters.
- *   4. Developer Acknowledgement: Direct clickable badge for creator Fayas.
- *   5. Ask Onee AI Trigger: Instant launcher for the Conversational Research Companion.
+ *      Toggles between BEGINNER, INTERMEDIATE, TECHNICAL, and PAPER modes.
+ *   3. Accessible Chapters Dropdown: Dropdown with independent two-way scrolling across all 11 chapters.
+ *   4. Developer Acknowledgement: Quick badge launching Creator profile modal.
+ *   5. Ask Onee AI Launcher: Instant trigger for the grounded conversational companion.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -163,8 +164,14 @@ export const Navigation: React.FC<NavigationProps> = ({
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-white border border-black/10 rounded-2xl p-2 backdrop-blur-2xl shadow-apple-lg z-50 max-h-96 overflow-y-auto font-mono text-xs animate-in fade-in zoom-in-95 duration-150">
-                <div className="flex items-center justify-between px-3 py-1.5 text-[10px] font-bold text-apple-tertiary uppercase border-b border-black/5 mb-1">
+              <div
+                data-scrollable="true"
+                onWheel={(e) => e.stopPropagation()}
+                onTouchMove={(e) => e.stopPropagation()}
+                className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-white border border-black/10 rounded-2xl p-2 backdrop-blur-2xl shadow-apple-lg z-50 max-h-96 overflow-y-auto font-mono text-xs animate-in fade-in zoom-in-95 duration-150 overscroll-contain"
+                style={{ overscrollBehavior: 'contain', touchAction: 'pan-y' }}
+              >
+                <div className="flex items-center justify-between px-3 py-1.5 text-[10px] font-bold text-apple-tertiary uppercase border-b border-black/5 mb-1 sticky top-0 bg-white/95 backdrop-blur-sm z-10">
                   <span>11 Interactive Chapters</span>
                   <button
                     onClick={() => setMenuOpen(false)}
@@ -174,22 +181,24 @@ export const Navigation: React.FC<NavigationProps> = ({
                     <X className="w-3 h-3" />
                   </button>
                 </div>
-                {STORY_CHAPTERS.map((ch) => (
-                  <button
-                    key={ch.id}
-                    onClick={() => {
-                      onNavigate(ch.id);
-                      setMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center justify-between text-xs ${
-                      activeSectionId === ch.id
-                        ? 'bg-blue-50 text-apple-blue font-bold border border-blue-200 shadow-apple-sm'
-                        : 'text-apple-secondary hover:bg-apple-bg hover:text-apple-text'
-                    }`}
-                  >
-                    <span className="truncate">Ch {ch.chapterNumber} • {ch.title}</span>
-                  </button>
-                ))}
+                <div className="space-y-1">
+                  {STORY_CHAPTERS.map((ch) => (
+                    <button
+                      key={ch.id}
+                      onClick={() => {
+                        onNavigate(ch.id);
+                        setMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center justify-between text-xs ${
+                        activeSectionId === ch.id
+                          ? 'bg-blue-50 text-apple-blue font-bold border border-blue-200 shadow-apple-sm'
+                          : 'text-apple-secondary hover:bg-apple-bg hover:text-apple-text'
+                      }`}
+                    >
+                      <span className="truncate">Ch {ch.chapterNumber} • {ch.title}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>

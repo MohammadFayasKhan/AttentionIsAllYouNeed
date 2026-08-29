@@ -286,7 +286,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 no-scrollbar bg-slate-50/40"
+        data-scrollable="true"
+        onWheel={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 bg-slate-50/40 overscroll-contain"
+        style={{ overscrollBehavior: 'contain', touchAction: 'pan-y' }}
       >
         {messages.map((msg) => {
           const isUser = msg.role === 'user';
@@ -367,21 +371,34 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggested Prompt Chips Bar */}
-      <div className="px-4 py-2 border-t border-black/5 bg-slate-50/90 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
-        <span className="text-[9px] font-mono font-bold text-apple-secondary uppercase shrink-0">
+      {/* Suggested Prompt Chips Bar — Fully scrollable horizontally on desktop with mouse wheel and touch */}
+      <div className="px-4 py-2 border-t border-black/5 bg-slate-50/90 flex items-center gap-2 shrink-0 overflow-hidden">
+        <span className="text-[9px] font-mono font-bold text-apple-secondary uppercase shrink-0 select-none">
           Suggested:
         </span>
-        {dynamicChips.map((chip, idx) => (
-          <button
-            key={idx}
-            onClick={() => handleSend(chip)}
-            disabled={loading || !!streamingId}
-            className="px-3 py-1.5 rounded-full bg-white border border-black/10 text-[11px] font-mono text-apple-secondary hover:text-apple-blue hover:border-blue-300 hover:bg-blue-50/50 disabled:opacity-40 transition-all shadow-apple-sm whitespace-nowrap shrink-0"
-          >
-            {chip}
-          </button>
-        ))}
+        <div
+          data-scrollable="true"
+          onWheel={(e) => {
+            if (e.deltaY !== 0) {
+              e.stopPropagation();
+              e.currentTarget.scrollLeft += e.deltaY;
+            }
+          }}
+          onTouchMove={(e) => e.stopPropagation()}
+          className="flex items-center gap-2 overflow-x-auto py-1 overscroll-contain flex-1 min-w-0"
+          style={{ overscrollBehavior: 'contain', scrollbarWidth: 'thin' }}
+        >
+          {dynamicChips.map((chip, idx) => (
+            <button
+              key={idx}
+              onClick={() => handleSend(chip)}
+              disabled={loading || !!streamingId}
+              className="px-3 py-1.5 rounded-full bg-white border border-black/10 text-[11px] font-mono text-apple-secondary hover:text-apple-blue hover:border-blue-300 hover:bg-blue-50/50 disabled:opacity-40 transition-all shadow-apple-sm whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Input Form with Textarea supporting Enter / Shift+Enter */}

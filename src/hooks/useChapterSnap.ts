@@ -1,18 +1,29 @@
 /**
  * useChapterSnap.ts
  * ─────────────────────────────────────────────────────────────────
- * Section-by-Section Snap Navigation Hook.
+ * Intentional Section-by-Section Chapter Navigation Hook.
  *
- * ARCHITECTURE:
- *   - ONE chapter visible at a time (fullscreen stage).
- *   - Explicit chapter state machine: activeIndex drives which chapter renders.
- *   - Arrow Down / Page Down / Space → next chapter.
- *   - Arrow Up / Page Up / Shift+Space → previous chapter.
- *   - Home → first chapter, End → last chapter.
- *   - Mouse wheel / trackpad: debounced direction detection → advance/retreat.
- *   - Touch swipe: vertical swipe detection → advance/retreat.
- *   - Short cooldown (400ms) prevents rapid over-scrolling while feeling responsive.
- *   - No scroll position dependency — the page never scrolls.
+ * Written by Mohammad Fayas Khan (3rd-year B.Tech CSE AI/ML student)
+ *
+ * ARCHITECTURE & SCROLL SAFETY:
+ *   1. Content-First Reading:
+ *      - When a chapter has vertically scrollable content (scrollHeight > clientHeight + 10),
+ *        scrolling DOWN or pressing ArrowDown / PageDown / Space scrolls THROUGH the chapter
+ *        content first until the user reaches the very bottom.
+ *      - It NEVER prematurely skips to the next chapter while the user is still reading.
+ *      - Only when the user is at the bottom (scrollTop + clientHeight >= scrollHeight - 8)
+ *        AND intentionally continues scrolling down / pressing ArrowDown does it transition.
+ *   2. Reversible Two-Way Movement:
+ *      - Scrolling UP or pressing ArrowUp / PageUp scrolls UP through the chapter content.
+ *      - Only when the user is at the top (scrollTop <= 5) AND continues scrolling up / pressing ArrowUp
+ *        does it transition back to the previous chapter.
+ *      - Home / End / Dot Rail / Navigation dropdown jump directly to target chapters.
+ *   3. Modal & Overlay Isolation:
+ *      - When isModalOpen is true, or when hovering over [data-scrollable], .allow-inner-scroll,
+ *        dropdowns, popovers, or modals, all snap triggers are bypassed so internal components
+ *        (chat, quiz, flashcards, chapters list) scroll independently in both directions.
+ *   4. Cooldown & Debounce:
+ *      - A calibrated cooldown prevents trackpad momentum from skipping multiple chapters.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -25,9 +36,9 @@ export interface TransitionTargetInfo {
   title: string;
 }
 
-const COOLDOWN_MS = 400;
-const WHEEL_THRESHOLD = 30;       // px of accumulated delta before triggering
-const TOUCH_SWIPE_THRESHOLD = 50; // px minimum vertical swipe distance
+const COOLDOWN_MS = 600;          // Cooldown between chapter transitions
+const WHEEL_THRESHOLD = 70;       // Accumulated px threshold at chapter boundaries
+const TOUCH_SWIPE_THRESHOLD = 60; // Minimum touch swipe distance at boundary
 
 export function useChapterSnap(sectionIds: string[], initialIndex = 0) {
   const total = sectionIds.length;
@@ -36,15 +47,17 @@ export function useChapterSnap(sectionIds: string[], initialIndex = 0) {
   const [direction, setDirection] = useState<'next' | 'prev' | 'none'>('none');
 
   const activeIdxRef = useRef(initialIndex);
+  const isModalOpenRef = useRef(isModalOpen);
   const cooldownRef = useRef(false);
   const wheelAccumRef = useRef(0);
   const wheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const touchStartRef = useRef<{ y: number; time: number } | null>(null);
+  const touchStartRef = useRef<{ y: number; atTop: boolean; atBottom: boolean; time: number } | null>(null);
 
-  // Keep ref in sync
+  // Keep refs in sync
   activeIdxRef.current = activeIndex;
+  isModalOpenRef.current = isModalOpen;
 
-  // ── Core navigation ───────────────────────────────────────────
+  // ── Core Chapter Navigation ────────────────────────────────────
   const goToChapter = useCallback((target: number | string) => {
     let targetIndex: number;
 
@@ -60,9 +73,18 @@ export function useChapterSnap(sectionIds: string[], initialIndex = 0) {
     setDirection(targetIndex > activeIdxRef.current ? 'next' : 'prev');
     setActiveIndex(targetIndex);
     activeIdxRef.current = targetIndex;
+    wheelAccumRef.current = 0;
     oneeBridge.emit('chapter_change');
 
-    // Cooldown to prevent rapid multi-fire
+    // Reset scroll position of stage content for the new chapter
+    requestAnimationFrame(() => {
+      const stageContent = document.querySelector('.chapter-stage-content') as HTMLElement | null;
+      if (stageContent) {
+        stageContent.scrollTop = 0;
+      }
+    });
+
+    // Cooldown to prevent rapid multi-chapter skipping
     cooldownRef.current = true;
     setTimeout(() => { cooldownRef.current = false; }, COOLDOWN_MS);
   }, [sectionIds, total]);
@@ -81,37 +103,115 @@ export function useChapterSnap(sectionIds: string[], initialIndex = 0) {
     }
   }, [goToChapter]);
 
-  // ── Keyboard navigation ───────────────────────────────────────
+  // ── Keyboard Navigation (Content-First Scrolling) ──────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept when focus is in an input, textarea, or contenteditable
-      const tag = (e.target as HTMLElement).tagName;
+      // Do nothing if assistant modal is open
+      if (isModalOpenRef.current) return;
+
+      // Don't intercept when focus is in an input, textarea, select, or editable element
+      const target = e.target as HTMLElement;
+      const tag = target.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      if ((e.target as HTMLElement).isContentEditable) return;
+      if (target.isContentEditable) return;
+      if (target.closest('[data-scrollable]') && !target.classList.contains('chapter-stage-content')) return;
+
+      const stageContent = document.querySelector('.chapter-stage-content') as HTMLElement | null;
 
       switch (e.key) {
-        case 'ArrowDown':
-        case 'PageDown':
+        case 'ArrowDown': {
+          if (stageContent) {
+            const { scrollTop, scrollHeight, clientHeight } = stageContent;
+            const isScrollable = scrollHeight > clientHeight + 10;
+            const isAtBottom = scrollTop + clientHeight >= scrollHeight - 12;
+
+            // If there's more content to read in this chapter, scroll down through it!
+            if (isScrollable && !isAtBottom) {
+              e.preventDefault();
+              stageContent.scrollBy({ top: 140, behavior: 'smooth' });
+              return;
+            }
+          }
+          // At bottom or not scrollable: advance to next chapter
           e.preventDefault();
           nextChapter();
           break;
-        case 'ArrowUp':
-        case 'PageUp':
+        }
+
+        case 'ArrowUp': {
+          if (stageContent) {
+            const { scrollTop, scrollHeight, clientHeight } = stageContent;
+            const isScrollable = scrollHeight > clientHeight + 10;
+            const isAtTop = scrollTop <= 6;
+
+            // If user is further down in this chapter, scroll up through it!
+            if (isScrollable && !isAtTop) {
+              e.preventDefault();
+              stageContent.scrollBy({ top: -140, behavior: 'smooth' });
+              return;
+            }
+          }
+          // At top or not scrollable: retreat to previous chapter
           e.preventDefault();
           prevChapter();
           break;
-        case ' ':
-          e.preventDefault();
-          if (e.shiftKey) {
+        }
+
+        case 'PageDown':
+        case ' ': {
+          if (e.key === ' ' && e.shiftKey) {
+            // Shift + Space -> scroll up / prev chapter
+            if (stageContent) {
+              const { scrollTop, scrollHeight, clientHeight } = stageContent;
+              const isScrollable = scrollHeight > clientHeight + 10;
+              const isAtTop = scrollTop <= 6;
+              if (isScrollable && !isAtTop) {
+                e.preventDefault();
+                stageContent.scrollBy({ top: -clientHeight * 0.75, behavior: 'smooth' });
+                return;
+              }
+            }
+            e.preventDefault();
             prevChapter();
           } else {
+            // Space / PageDown -> scroll down / next chapter
+            if (stageContent) {
+              const { scrollTop, scrollHeight, clientHeight } = stageContent;
+              const isScrollable = scrollHeight > clientHeight + 10;
+              const isAtBottom = scrollTop + clientHeight >= scrollHeight - 12;
+              if (isScrollable && !isAtBottom) {
+                e.preventDefault();
+                stageContent.scrollBy({ top: clientHeight * 0.75, behavior: 'smooth' });
+                return;
+              }
+            }
+            e.preventDefault();
             nextChapter();
           }
           break;
+        }
+
+        case 'PageUp': {
+          if (stageContent) {
+            const { scrollTop, scrollHeight, clientHeight } = stageContent;
+            const isScrollable = scrollHeight > clientHeight + 10;
+            const isAtTop = scrollTop <= 6;
+            if (isScrollable && !isAtTop) {
+              e.preventDefault();
+              stageContent.scrollBy({ top: -clientHeight * 0.75, behavior: 'smooth' });
+              return;
+            }
+          }
+          e.preventDefault();
+          prevChapter();
+          break;
+        }
+
         case 'Home':
           e.preventDefault();
           goToChapter(0);
           break;
+
         case 'End':
           e.preventDefault();
           goToChapter(total - 1);
@@ -123,50 +223,67 @@ export function useChapterSnap(sectionIds: string[], initialIndex = 0) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [nextChapter, prevChapter, goToChapter, total]);
 
-  // ── Wheel / trackpad navigation ───────────────────────────────
+  // ── Wheel / Trackpad Navigation (Scroll-First with Boundary Snap) ───
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      // Don't intercept if inside a scrollable child (e.g. dropdown, overlay)
+      // Do nothing if assistant modal is open
+      if (isModalOpenRef.current) return;
+
       const target = e.target as HTMLElement;
-      const scrollableParent = target.closest('[data-scrollable]');
-      if (scrollableParent) return;
 
-      // Check if the chapter content is scrollable and not at boundary
+      // If user is scrolling inside a modal, dropdown, code editor, or other scrollable widget, let it scroll naturally!
+      const scrollableChild = target.closest('[data-scrollable], .allow-inner-scroll, header, nav, .bs-avatar');
+      if (scrollableChild && !scrollableChild.classList.contains('chapter-stage-content')) {
+        return;
+      }
+
       const stageContent = document.querySelector('.chapter-stage-content') as HTMLElement | null;
-      if (stageContent) {
-        const { scrollTop, scrollHeight, clientHeight } = stageContent;
-        const isAtTop = scrollTop <= 1;
-        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1;
-        const isScrollable = scrollHeight > clientHeight + 2;
+      if (!stageContent) return;
 
-        // If content is scrollable and NOT at boundary, let native scroll happen
-        if (isScrollable) {
-          if (e.deltaY > 0 && !isAtBottom) return;  // scrolling down, not at bottom
-          if (e.deltaY < 0 && !isAtTop) return;     // scrolling up, not at top
+      const { scrollTop, scrollHeight, clientHeight } = stageContent;
+      const isScrollable = scrollHeight > clientHeight + 10;
+      const isAtTop = scrollTop <= 4;
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 6;
+
+      // If chapter content is scrollable and user has NOT reached boundary:
+      // ALLOW natural vertical scrolling without intercepting!
+      if (isScrollable) {
+        if (e.deltaY > 0 && !isAtBottom) {
+          wheelAccumRef.current = 0;
+          return;
+        }
+        if (e.deltaY < 0 && !isAtTop) {
+          wheelAccumRef.current = 0;
+          return;
         }
       }
 
+      // If at boundary (or not scrollable), user is pushing past the end of the chapter.
+      // Prevent default page bounce and accumulate intentional delta:
       e.preventDefault();
 
-      // Accumulate delta
-      wheelAccumRef.current += e.deltaY;
+      if (cooldownRef.current) return;
 
-      // Clear reset timer
+      // Accumulate delta in direction of scroll
+      if (e.deltaY > 0) {
+        wheelAccumRef.current = Math.max(0, wheelAccumRef.current) + e.deltaY;
+      } else if (e.deltaY < 0) {
+        wheelAccumRef.current = Math.min(0, wheelAccumRef.current) + e.deltaY;
+      }
+
+      // Clear accumulator timer
       if (wheelTimerRef.current) clearTimeout(wheelTimerRef.current);
-
-      // Reset accumulator after inactivity
       wheelTimerRef.current = setTimeout(() => {
         wheelAccumRef.current = 0;
-      }, 150);
+      }, 200);
 
-      // Check threshold
-      if (Math.abs(wheelAccumRef.current) >= WHEEL_THRESHOLD) {
-        if (wheelAccumRef.current > 0) {
-          nextChapter();
-        } else {
-          prevChapter();
-        }
+      // Check if threshold reached for intentional chapter transition
+      if (wheelAccumRef.current >= WHEEL_THRESHOLD) {
         wheelAccumRef.current = 0;
+        nextChapter();
+      } else if (wheelAccumRef.current <= -WHEEL_THRESHOLD) {
+        wheelAccumRef.current = 0;
+        prevChapter();
       }
     };
 
@@ -174,30 +291,50 @@ export function useChapterSnap(sectionIds: string[], initialIndex = 0) {
     return () => window.removeEventListener('wheel', handleWheel);
   }, [nextChapter, prevChapter]);
 
-  // ── Touch swipe navigation ────────────────────────────────────
+  // ── Touch Swipe Navigation (Boundary-Aware on Mobile) ──────────
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
+      if (isModalOpenRef.current) return;
+
       const touch = e.touches[0];
-      if (touch) {
-        touchStartRef.current = { y: touch.clientY, time: Date.now() };
+      if (!touch) return;
+
+      const stageContent = document.querySelector('.chapter-stage-content') as HTMLElement | null;
+      let atTop = true;
+      let atBottom = true;
+
+      if (stageContent) {
+        const { scrollTop, scrollHeight, clientHeight } = stageContent;
+        atTop = scrollTop <= 6;
+        atBottom = scrollTop + clientHeight >= scrollHeight - 8;
       }
+
+      touchStartRef.current = {
+        y: touch.clientY,
+        atTop,
+        atBottom,
+        time: Date.now()
+      };
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
-      if (!touchStartRef.current) return;
+      if (isModalOpenRef.current || !touchStartRef.current) return;
 
       const touch = e.changedTouches[0];
       if (!touch) return;
 
       const deltaY = touchStartRef.current.y - touch.clientY;
       const elapsed = Date.now() - touchStartRef.current.time;
+      const { atTop, atBottom } = touchStartRef.current;
 
-      // Only respond to intentional swipes (not taps or slow drags)
-      if (Math.abs(deltaY) >= TOUCH_SWIPE_THRESHOLD && elapsed < 500) {
-        if (deltaY > 0) {
-          nextChapter(); // swipe up → next
-        } else {
-          prevChapter(); // swipe down → prev
+      // Only transition if swipe started at the boundary and user swiped intentionally
+      if (Math.abs(deltaY) >= TOUCH_SWIPE_THRESHOLD && elapsed < 600) {
+        if (deltaY > 0 && atBottom) {
+          // Swiped up while at bottom of chapter -> next chapter
+          nextChapter();
+        } else if (deltaY < 0 && atTop) {
+          // Swiped down while at top of chapter -> prev chapter
+          prevChapter();
         }
       }
 

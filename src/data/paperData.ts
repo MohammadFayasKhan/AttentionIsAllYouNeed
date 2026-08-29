@@ -1,3 +1,30 @@
+/**
+ * paperData.ts
+ * ─────────────────────────────────────────────────────────────────
+ * Ground-Truth Dataset for "Attention Is All You Need" (Vaswani et al. 2017)
+ *
+ * Project: AttentionIsAllYouNeed
+ * Built by: Mohammad Fayas Khan (3rd-year B.Tech CSE AI/ML student at LPU)
+ *
+ * Architecture & Contents:
+ *   1. PAPER_METADATA: Complete author credits (Google Brain / Google Research / Univ of Toronto),
+ *      NIPS 2017 conference citation, and verbatim abstract.
+ *   2. STORY_CHAPTERS: 11 progressive interactive chapters covering the entire paper:
+ *      - Ch 00: The Sequence Reading Dilemma (Historical Context)
+ *      - Ch 01: The Sequential Bottleneck (RNN O(n) Limitation)
+ *      - Ch 02: Scaled Dot-Product Attention (Q, K, V & Softmax Scaling)
+ *      - Ch 03: Multi-Head Attention (Parallel Subspace Projections)
+ *      - Ch 04: Complete Architecture (Encoder-Decoder & Residual Add+Norm)
+ *      - Ch 05: Positional Encoding (Sinusoidal Frequency Harmonics)
+ *      - Ch 06: Maximum Path Lengths (Table 1 Complexity Analysis)
+ *      - Ch 07: Translation Results (Table 2 WMT 2014 BLEU Benchmarks)
+ *      - Ch 08: Model Variations & Ablations (Table 3 Head & Key Studies)
+ *      - Ch 09: 3D Paper Notebook (Constituency Parsing & Blueprints)
+ *      - Ch 10: Conclusion & Modern LLM Lineage
+ *   3. TABLES 1-4: Exact reproductions of paper tables (Complexity, BLEU, Ablations, Parsing).
+ *   4. DIFFICULTY DETAILS: Explanations categorized by BEGINNER, INTERMEDIATE, TECHNICAL, and PAPER_MODE.
+ */
+
 export type ProvenanceTag = 'FROM PAPER' | 'DERIVED' | 'ILLUSTRATIVE' | 'EXTERNAL';
 export type EducationalMode = 'BEGINNER' | 'INTERMEDIATE' | 'TECHNICAL' | 'PAPER_MODE';
 

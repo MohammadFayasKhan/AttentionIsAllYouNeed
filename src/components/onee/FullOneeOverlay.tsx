@@ -359,7 +359,11 @@ export const FullOneeOverlay: React.FC<FullOneeOverlayProps> = ({
           </div>
 
           {/* Right Column: Active Interactive Panel */}
-          <div className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-5 flex flex-col justify-start min-h-0 allow-inner-scroll">
+          <div
+            data-scrollable="true"
+            className={`flex-1 ${activeTab === 'chat' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto flex flex-col justify-start'} p-2 sm:p-4 lg:p-5 min-h-0 allow-inner-scroll`}
+            style={{ overscrollBehavior: 'contain' }}
+          >
             {activeTab === 'chat' && (
               <ChatPanel
                 activeChapterId={activeChapterId}
