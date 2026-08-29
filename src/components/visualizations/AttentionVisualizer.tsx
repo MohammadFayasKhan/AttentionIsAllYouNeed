@@ -6,7 +6,7 @@
  *   Attention(Q, K, V) = softmax(QKᵀ / √d_k)V
  *
  * Layout & Content Protection:
- *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
+ *   - Centered container with auto-height and responsive token grid.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -108,7 +108,7 @@ export const AttentionVisualizer: React.FC = () => {
   });
 
   return (
-    <div className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer">
+    <div className="w-full max-w-2xl mx-auto h-auto rounded-2xl bg-slate-50/80 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer self-center">
       {/* Header & Controls Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-1.5 gap-1.5">
         <div>
@@ -124,11 +124,12 @@ export const AttentionVisualizer: React.FC = () => {
         <div className="flex items-center gap-1.5 text-xs font-mono flex-wrap">
           <button
             onClick={toggleAutoPlay}
-            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs focus-visible:ring-2 focus-visible:ring-apple-blue ${
               isPlaying
                 ? 'bg-apple-blue text-white hover:bg-blue-600'
                 : 'bg-slate-100 text-apple-secondary hover:text-apple-text hover:bg-slate-200'
             }`}
+            aria-label="Toggle auto-sweep"
           >
             {isPlaying ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 fill-current" />}
             <span>{isPlaying ? 'Auto-Sweep' : 'Play'}</span>
@@ -158,19 +159,19 @@ export const AttentionVisualizer: React.FC = () => {
             <motion.button
               key={idx}
               onClick={() => handleSelectToken(idx)}
-              whileHover={{ scale: 1.06 }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               animate={{
-                scale: isSelected ? 1.05 : 1,
+                scale: isSelected ? 1.04 : 1,
                 borderColor: isSelected ? '#0071e3' : isTopTarget ? '#93c5fd' : 'rgba(0,0,0,0.08)'
               }}
               transition={{ duration: 0.2 }}
-              className={`relative px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-mono transition-all border ${
+              className={`relative px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-mono transition-all border focus-visible:ring-2 focus-visible:ring-apple-blue ${
                 isSelected
                   ? 'bg-apple-blue text-white font-bold shadow-apple-md z-10'
                   : isTopTarget
                   ? 'bg-blue-50/90 text-apple-blue font-bold border-blue-200 shadow-apple-xs'
-                  : 'bg-slate-50 border-black/5 text-apple-text hover:bg-black/5'
+                  : 'bg-white border-black/5 text-apple-text hover:bg-slate-100'
               }`}
             >
               {token}
@@ -186,7 +187,7 @@ export const AttentionVisualizer: React.FC = () => {
       </div>
 
       {/* Dynamic Attention Weight Visualization Card */}
-      <div className="p-3 rounded-2xl bg-slate-50 border border-black/5 space-y-2 shadow-apple-xs">
+      <div className="p-3 rounded-2xl bg-white border border-black/5 space-y-2 shadow-apple-xs">
         <div className="flex items-center justify-between text-xs font-mono flex-wrap gap-1">
           <div className="flex items-center gap-2">
             <span className="text-apple-secondary text-[11px]">
@@ -231,7 +232,7 @@ export const AttentionVisualizer: React.FC = () => {
           {tokens.map((t, idx) => (
             <span
               key={idx}
-              className={`truncate ${
+              className={`block ${
                 idx === selectedTokenIndex
                   ? 'text-apple-blue font-bold'
                   : idx === maxTargetIdx

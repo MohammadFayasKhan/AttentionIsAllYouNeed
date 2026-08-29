@@ -2,12 +2,13 @@
  * Sketchbook.tsx
  * --------------------------------------------------------------------------------
  * Architecture Overview:
- * Sketchbook is an interactive 3D virtual research notebook replicating the original
+ * Interactive 3D virtual research notebook replicating the original
  * Vaswani et al. (2017) NIPS conference publication spreads and blueprints.
  *
  * Layout & Content Protection:
- *   - Uses a self-contained, auto-height layout that never clips or overflows surrounding document text.
- *   - Drag-to-tilt 3D stage and loupe overlay maintain stable boundaries.
+ *   - Centered layout (max-w-2xl mx-auto) with auto-height.
+ *   - touch-action: pan-y allows vertical finger scrolling on mobile without trapping.
+ *   - Auto-tour pauses when out of viewport or when tab is hidden.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -32,6 +33,7 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
   const [loupePos, setLoupePos] = useState<{ x: number; y: number }>({ x: 50, y: 50 });
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const isVisibleRef = useRef<boolean>(true);
 
   const paperPages = [
     {
@@ -108,17 +110,31 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
     }
   ];
 
-  // Auto-tour rotation with tab visibility awareness
+  // Auto-tour rotation with visibility and tab awareness
   useEffect(() => {
-    if (!isPlaying) return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      isVisibleRef.current = entry.isIntersecting;
+    }, { threshold: 0.05 });
+    observer.observe(el);
+
+    if (!isPlaying) {
+      observer.disconnect();
+      return;
+    }
 
     const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && isVisibleRef.current) {
         setCurrentPage((prev) => (prev + 1) % paperPages.length);
       }
     }, 4500);
 
-    return () => clearInterval(interval);
+    return () => {
+      observer.disconnect();
+      clearInterval(interval);
+    };
   }, [isPlaying, paperPages.length]);
 
   const currentPlate = paperPages[currentPage];
@@ -178,75 +194,79 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
 
   return (
     <div
-      className={`relative w-full h-auto min-h-[460px] flex flex-col items-center justify-between p-4 rounded-3xl bg-white/95 border border-black/10 shadow-apple-md font-sans ${className}`}
+      ref={containerRef}
+      className={`relative w-full max-w-2xl mx-auto flex flex-col items-center justify-between p-3 sm:p-5 rounded-2xl sm:rounded-3xl bg-white/95 border border-black/10 shadow-apple-md font-sans overflow-hidden self-center ${className}`}
     >
       {/* Top Controls Bar */}
-      <div className="w-full flex items-center justify-between z-30 pb-2.5 border-b border-black/5 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full text-xs text-apple-blue font-mono font-bold shadow-apple-sm">
-            <Move className="w-3.5 h-3.5 animate-pulse" />
-            <span>3D Interactive Plate {currentPage + 1} of {paperPages.length}</span>
+      <div className="w-full max-w-xl mx-auto flex items-center justify-between z-30 pb-2.5 border-b border-black/5 flex-wrap gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full text-[11px] sm:text-xs text-apple-blue font-mono font-bold shadow-apple-sm">
+            <Move className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-pulse" />
+            <span>Plate {currentPage + 1} of {paperPages.length}</span>
           </div>
 
           {/* Auto-Tour Toggle */}
           <button
             onClick={toggleAutoTour}
-            className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-mono font-bold transition-all shadow-apple-xs ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-mono font-bold transition-all shadow-apple-xs focus-visible:ring-2 focus-visible:ring-apple-blue ${
               isPlaying
                 ? 'bg-apple-blue text-white hover:bg-blue-600'
                 : 'bg-white text-apple-secondary hover:text-apple-text border border-black/10'
             }`}
           >
             {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 fill-current" />}
-            <span>{isPlaying ? 'Auto-Tour Active' : 'Play Tour'}</span>
+            <span>{isPlaying ? 'Auto-Tour' : 'Tour'}</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-white/90 border border-black/10 px-2.5 py-1 rounded-full text-xs text-apple-secondary shadow-apple-sm">
+        <div className="flex items-center gap-1 bg-white/90 border border-black/10 px-2 py-0.5 rounded-full text-xs text-apple-secondary shadow-apple-sm shrink-0">
           <button
-            onClick={() => setZoom((z) => Math.min(z + 0.2, 1.6))}
-            className="p-1 hover:text-apple-blue transition-colors"
+            onClick={() => setZoom((z) => Math.min(z + 0.2, 1.4))}
+            className="p-1 hover:text-apple-blue transition-colors focus-visible:ring-2 focus-visible:ring-apple-blue rounded"
             title="Zoom In"
+            aria-label="Zoom in"
           >
-            <ZoomIn className="w-4 h-4" />
+            <ZoomIn className="w-3.5 h-3.5" />
           </button>
-          <span className="text-[10px] font-mono text-apple-tertiary px-1">
+          <span className="text-[9px] font-mono text-apple-tertiary px-0.5">
             {(zoom * 100).toFixed(0)}%
           </span>
           <button
             onClick={() => setZoom((z) => Math.max(z - 0.2, 0.8))}
-            className="p-1 hover:text-apple-blue transition-colors"
+            className="p-1 hover:text-apple-blue transition-colors focus-visible:ring-2 focus-visible:ring-apple-blue rounded"
             title="Zoom Out"
+            aria-label="Zoom out"
           >
-            <ZoomOut className="w-4 h-4" />
+            <ZoomOut className="w-3.5 h-3.5" />
           </button>
-          <div className="w-px h-3 bg-black/10 mx-1" />
+          <div className="w-px h-3 bg-black/10 mx-0.5" />
           <button
             onClick={() => setLoupeActive(!loupeActive)}
-            className={`p-1 transition-colors ${loupeActive ? 'text-apple-blue font-bold' : 'hover:text-apple-text'}`}
+            className={`p-1 transition-colors rounded focus-visible:ring-2 focus-visible:ring-apple-blue ${loupeActive ? 'text-apple-blue font-bold' : 'hover:text-apple-text'}`}
             title="Magnifying Loupe"
+            aria-label="Toggle magnifying loupe"
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={resetView}
-            className="p-1 hover:text-apple-blue transition-colors"
+            className="p-1 hover:text-apple-blue transition-colors rounded focus-visible:ring-2 focus-visible:ring-apple-blue"
             title="Reset Camera"
+            aria-label="Reset 3D camera view"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* 3D Stage Viewport */}
+      {/* 3D Stage Viewport — pointer capture for mouse drag, but touch-action:pan-y passes vertical finger swipes to native scroll */}
       <div
-        ref={containerRef}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
-        className="w-full h-[240px] sm:h-[260px] flex items-center justify-center cursor-grab active:cursor-grabbing select-none relative my-1 overflow-visible"
-        style={{ perspective: '1200px' }}
+        className="w-full max-w-xl min-h-[290px] sm:min-h-[270px] flex items-center justify-center cursor-grab active:cursor-grabbing select-none relative my-2 overflow-visible mx-auto"
+        style={{ perspective: '1200px', touchAction: 'pan-y' }}
       >
         <motion.div
           animate={{
@@ -259,7 +279,7 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
             rotateX: isDragging ? { duration: 0 } : { duration: 6, repeat: Infinity, ease: 'easeInOut' },
             rotateY: isDragging ? { duration: 0 } : { duration: 6, repeat: Infinity, ease: 'easeInOut' }
           }}
-          className="relative w-[320px] sm:w-[430px] h-[220px] sm:h-[240px]"
+          className="relative w-full max-w-[420px] min-h-[270px] sm:min-h-[250px] mx-auto flex flex-col"
           style={{ transformStyle: 'preserve-3d' }}
         >
           {/* Main Paper Plate Container */}
@@ -270,70 +290,70 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
               animate={{ opacity: 1, scale: 1, rotateY: 0 }}
               exit={{ opacity: 0, scale: 0.96, rotateY: 8 }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
-              className={`w-full h-full rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-2xl border border-black/10 bg-gradient-to-br ${currentPlate.color} flex flex-col justify-between relative overflow-visible backdrop-blur-md`}
+              className={`w-full min-h-full rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 shadow-xl border border-black/10 bg-gradient-to-br ${currentPlate.color} flex flex-col justify-between relative backdrop-blur-md mx-auto`}
               style={{
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05)'
+                boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.05)'
               }}
             >
               {/* Paper Watermark Texture */}
-              <div className="absolute inset-0 bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.03] pointer-events-none rounded-3xl" />
+              <div className="absolute inset-0 bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.03] pointer-events-none rounded-2xl sm:rounded-3xl" />
 
               {/* Plate Header */}
-              <div className="relative z-10 flex items-center justify-between border-b border-black/5 pb-2">
-                <span className="text-[10px] font-mono font-bold text-apple-blue px-2.5 py-0.5 rounded-full bg-white border border-blue-200 shadow-apple-xs flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
+              <div className="relative z-10 flex items-center justify-between border-b border-black/5 pb-1.5">
+                <span className="text-[10px] font-mono font-bold text-apple-blue px-2 py-0.5 rounded-full bg-white border border-blue-200 shadow-apple-xs flex items-center gap-1">
+                  <Sparkles className="w-2.5 h-2.5" />
                   {currentPlate.figure}
                 </span>
-                <span className="text-[9px] font-mono text-apple-tertiary">
+                <span className="text-[8px] sm:text-[9px] font-mono text-apple-tertiary">
                   Vaswani et al. (2017)
                 </span>
               </div>
 
               {/* Plate Main Title & Body */}
-              <div className="relative z-10 my-auto py-1 space-y-1.5 overflow-visible">
+              <div className="relative z-10 my-auto py-1 space-y-1 overflow-visible">
                 <div>
-                  <h3 className="text-sm sm:text-base font-bold text-apple-text font-mono leading-tight">
+                  <h3 className="text-xs sm:text-sm font-bold text-apple-text font-mono leading-snug">
                     {currentPlate.title}
                   </h3>
-                  <p className="text-[11px] text-apple-secondary font-mono mt-0.5">
+                  <p className="text-[10px] sm:text-[11px] text-apple-secondary font-mono">
                     {currentPlate.subtitle}
                   </p>
                 </div>
 
-                <div className="p-2 rounded-xl bg-white/90 border border-black/5 shadow-apple-xs font-mono text-xs text-apple-text">
+                <div className="p-1.5 sm:p-2 rounded-xl bg-white/90 border border-black/5 shadow-apple-xs font-mono text-[11px] sm:text-xs text-apple-text break-words">
                   <MarkdownRenderer content={currentPlate.content} />
                 </div>
 
-                <div className="text-[11px] text-apple-secondary leading-relaxed font-sans">
+                <div className="text-[10px] sm:text-[11px] text-apple-secondary leading-relaxed font-sans break-words">
                   <MarkdownRenderer content={currentPlate.body} />
                 </div>
               </div>
 
               {/* Plate Footer Details */}
-              <div className="relative z-10 border-t border-black/5 pt-1.5 flex items-center justify-between gap-1 flex-wrap">
-                <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="relative z-10 border-t border-black/5 pt-1 flex items-center justify-between gap-1 flex-wrap">
+                <div className="flex items-center gap-1 flex-wrap">
                   {currentPlate.details.map((d, i) => (
                     <span
                       key={i}
-                      className="text-[9px] font-mono text-apple-secondary bg-black/5 px-2 py-0.5 rounded-md font-semibold"
+                      className="text-[8px] sm:text-[9px] font-mono text-apple-secondary bg-black/5 px-1.5 py-0.2 rounded font-semibold"
                     >
                       {d}
                     </span>
                   ))}
                 </div>
-                <span className="text-[9px] font-mono text-apple-tertiary">
+                <span className="text-[8px] sm:text-[9px] font-mono text-apple-tertiary shrink-0">
                   Plate {currentPage + 1}/{paperPages.length}
                 </span>
               </div>
             </motion.div>
           </AnimatePresence>
 
-          {/* Interactive Magnifying Loupe Overlay */}
+          {/* Magnifying Loupe Overlay */}
           {loupeActive && (
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="absolute w-36 h-36 rounded-full border-4 border-apple-blue bg-white shadow-2xl pointer-events-none z-40 overflow-hidden flex items-center justify-center backdrop-blur-md"
+              className="absolute w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-apple-blue bg-white shadow-2xl pointer-events-none z-40 overflow-hidden flex items-center justify-center backdrop-blur-md"
               style={{
                 top: `${loupePos.y}%`,
                 left: `${loupePos.x}%`,
@@ -341,8 +361,8 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
                 boxShadow: '0 20px 40px rgba(0, 113, 227, 0.35)'
               }}
             >
-              <div className="text-center p-3 font-mono text-xs text-apple-blue font-bold">
-                <span className="text-[10px] text-apple-tertiary block mb-1">1.35x Lens</span>
+              <div className="text-center p-2 font-mono text-xs text-apple-blue font-bold break-words">
+                <span className="text-[9px] text-apple-tertiary block mb-0.5">1.35x Lens</span>
                 <MarkdownRenderer content={currentPlate.content} />
               </div>
             </motion.div>
@@ -351,37 +371,40 @@ export const Sketchbook: React.FC<SketchbookProps> = ({ className = '', initialP
       </div>
 
       {/* Bottom Spread Navigator Controls */}
-      <div className="w-full flex items-center justify-between z-30 pt-2 border-t border-black/5 flex-wrap gap-2">
+      <div className="w-full max-w-xl mx-auto flex items-center justify-between z-30 pt-2.5 border-t border-black/5 flex-wrap gap-1.5">
         <button
           onClick={prevPage}
-          className="flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-white border border-black/10 shadow-apple-xs hover:border-blue-300 hover:text-apple-blue text-apple-secondary text-xs font-mono font-bold transition-all"
+          className="flex items-center gap-1 px-3 sm:px-3.5 py-1.5 rounded-full bg-white border border-black/10 shadow-apple-xs hover:border-blue-300 hover:text-apple-blue text-apple-secondary text-[11px] sm:text-xs font-mono font-bold transition-all min-h-[36px] focus-visible:ring-2 focus-visible:ring-apple-blue"
+          aria-label="Previous plate"
         >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Previous Plate</span>
+          <ChevronLeft className="w-3.5 h-3.5" />
+          <span>Previous</span>
         </button>
 
         {/* Spread Navigation Dots */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5">
           {paperPages.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentPage(idx)}
-              className={`h-2 rounded-full transition-all ${
+              className={`h-1.5 sm:h-2 rounded-full transition-all focus-visible:ring-2 focus-visible:ring-apple-blue ${
                 idx === currentPage
-                  ? 'w-6 bg-apple-blue shadow-apple-sm'
-                  : 'w-2 bg-black/15 hover:bg-black/30'
+                  ? 'w-4 sm:w-6 bg-apple-blue shadow-apple-sm'
+                  : 'w-1.5 sm:w-2 bg-black/15 hover:bg-black/30'
               }`}
               title={`Jump to Plate ${idx + 1}`}
+              aria-label={`Go to plate ${idx + 1}`}
             />
           ))}
         </div>
 
         <button
           onClick={nextPage}
-          className="flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-white border border-black/10 shadow-apple-xs hover:border-blue-300 hover:text-apple-blue text-apple-secondary text-xs font-mono font-bold transition-all"
+          className="flex items-center gap-1 px-3 sm:px-3.5 py-1.5 rounded-full bg-white border border-black/10 shadow-apple-xs hover:border-blue-300 hover:text-apple-blue text-apple-secondary text-[11px] sm:text-xs font-mono font-bold transition-all min-h-[36px] focus-visible:ring-2 focus-visible:ring-apple-blue"
+          aria-label="Next plate"
         >
-          <span>Next Plate</span>
-          <ChevronRight className="w-4 h-4" />
+          <span>Next</span>
+          <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

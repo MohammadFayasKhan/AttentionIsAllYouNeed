@@ -1,20 +1,15 @@
 /**
  * App.tsx
- * --------------------------------------------------------------------------------
- * Architecture Overview:
- * App.tsx is the root component of the "Attention Is All You Need" interactive experience.
+ * ─────────────────────────────────────────────────────────────────
+ * Root component.
  *
- * Page Shell & Layout Architecture:
- *   1. Sticky Top Navigation Bar:
- *      - Occupies real document layout space (64px).
- *      - Sticky positioning ensures main content never begins underneath or overlaps the header.
- *   2. Main Page Stage:
- *      - Normal responsive document flow (`flex-1`).
- *      - Pure content-driven height with locked, balanced outer vertical padding (`--page-vertical-gap`).
- *      - Navbar → Top Gap → [Chapter | Onee Shared Grid] → Bottom Gap → Viewport/Page End.
- *   3. Global Educational Mode State:
- *      - Initialized to 'BEGINNER' on fresh load.
- *      - Synchronized across the entire interface.
+ * Section-by-Section Snap Architecture:
+ *   - ONE chapter visible at a time inside a full-viewport stage.
+ *   - AnimatePresence drives smooth blur+fade+slide transitions between chapters.
+ *   - Fixed Navigation header at top: 0, never moves.
+ *   - Chapter Rail fixed on left (xl: screens).
+ *   - Keyboard (Arrow/Page/Home/End), wheel, trackpad, and touch swipe
+ *     all navigate between chapters via useChapterSnap.
  */
 
 import React, { useState } from 'react';
@@ -23,121 +18,124 @@ import { useChapterSnap } from './hooks/useChapterSnap';
 import { Navigation } from './components/storytelling/Navigation';
 import { SpatialScene } from './components/storytelling/SpatialScene';
 import { LivingOneeStage } from './components/onee/LivingOneeStage';
+import { ChapterRail } from './components/storytelling/ChapterRail';
 import { OverlayTab } from './components/onee/FullOneeOverlay';
 import { ExpressionKey } from './components/assistant/AvatarController';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Transition configuration — Apple-like ease curves
+const TRANSITION_CONFIG = {
+  duration: 0.55,
+  ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+};
+
+// Slide offset for enter/exit (subtle, not jarring)
+const SLIDE_OFFSET = 50;
+
 export function App() {
   const sectionIds = STORY_CHAPTERS.map((c) => c.id);
+
   const {
     activeIndex,
     activeChapterId,
     goToChapter,
     totalChapters,
     isModalOpen,
-    setIsModalOpen
+    setIsModalOpen,
+    direction,
   } = useChapterSnap(sectionIds);
 
-  // Default mode is strictly BEGINNER on fresh load as required
   const [mode, setMode] = useState<EducationalMode>('BEGINNER');
   const [modalTab, setModalTab] = useState<OverlayTab>('chat');
 
-  const activeChapter = STORY_CHAPTERS[activeIndex] || STORY_CHAPTERS[0];
-  const currentMood = (activeChapter.oneeMood as ExpressionKey) || 'neutral';
+  const activeChapter = STORY_CHAPTERS[activeIndex] ?? STORY_CHAPTERS[0];
+  const currentMood   = (activeChapter.oneeMood as ExpressionKey) ?? 'neutral';
 
   const handleOpenCompanion = (tab: OverlayTab = 'chat') => {
     setModalTab(tab);
     setIsModalOpen(true);
   };
+  const handleCloseCompanion = () => setIsModalOpen(false);
 
-  const handleCloseCompanion = () => {
-    setIsModalOpen(false);
-  };
+  // Direction-aware variants for slide transitions
+  const slideDirection = direction === 'prev' ? -1 : 1;
 
   return (
-    <div className="w-full bg-[#f5f5f7] text-[#1d1d1f] font-sans relative selection:bg-blue-500/20 selection:text-blue-900">
-      {/* Hardware-Accelerated Ambient Glow Diffusion */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 contain-strict">
+    <div className="app-root">
+
+      {/* Ambient background glow — fixed, pointer-events-none */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
         <div
-          className="absolute -top-[15%] -left-[10%] w-[650px] h-[650px] rounded-full opacity-60 pointer-events-none gpu-layer"
-          style={{
-            background: 'radial-gradient(circle, rgba(0, 113, 227, 0.22) 0%, rgba(99, 102, 241, 0.12) 40%, transparent 70%)',
-            filter: 'blur(60px)'
-          }}
+          className="absolute -top-[15%] -left-[10%] w-[80vw] max-w-[650px] h-[80vw] max-h-[650px] rounded-full opacity-40"
+          style={{ background: 'radial-gradient(circle, rgba(0,113,227,0.18) 0%, transparent 70%)', filter: 'blur(60px)' }}
         />
         <div
-          className="absolute -bottom-[15%] -right-[10%] w-[700px] h-[700px] rounded-full opacity-55 pointer-events-none gpu-layer"
-          style={{
-            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.20) 0%, rgba(236, 72, 153, 0.10) 40%, transparent 70%)',
-            filter: 'blur(60px)'
-          }}
-        />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] rounded-full opacity-45 pointer-events-none gpu-layer"
-          style={{
-            background: 'radial-gradient(circle, rgba(0, 199, 190, 0.18) 0%, rgba(0, 113, 227, 0.08) 40%, transparent 70%)',
-            filter: 'blur(50px)'
-          }}
+          className="absolute -bottom-[15%] -right-[10%] w-[80vw] max-w-[700px] h-[80vw] max-h-[700px] rounded-full opacity-35"
+          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%)', filter: 'blur(60px)' }}
         />
       </div>
 
-      {/* Sticky Top Navigation Bar (Occupies real 64px document layout space) */}
+      {/* Fixed top navigation bar — rock-solid, firmly anchored */}
       <Navigation
         activeSectionId={activeChapterId}
-        onNavigate={(id) => {
-          const idx = sectionIds.indexOf(id);
-          if (idx !== -1) goToChapter(idx);
-        }}
+        onNavigate={goToChapter}
         mode={mode}
         onModeChange={setMode}
         onOpenOnee={handleOpenCompanion}
       />
 
-      {/* Chapter Indicator Rail (Left Margin Viewport on Desktop) */}
-      <div className="hidden xl:flex fixed left-4 top-1/2 -translate-y-1/2 z-30 flex-col items-center gap-2 pointer-events-none select-none">
-        <div className="text-[10px] font-mono font-bold text-apple-blue tracking-widest uppercase mb-1">
-          {activeIndex < 9 ? `0${activeIndex + 1}` : activeIndex + 1} / {totalChapters < 10 ? `0${totalChapters}` : totalChapters}
-        </div>
-        <div className="flex flex-col gap-1.5 pointer-events-auto">
-          {STORY_CHAPTERS.map((ch, idx) => (
-            <button
-              key={ch.id}
-              onClick={() => goToChapter(idx)}
-              className={`w-2 rounded-full transition-all duration-200 ${
-                idx === activeIndex
-                  ? 'h-6 bg-apple-blue shadow-apple-sm'
-                  : 'h-2 bg-black/15 hover:bg-black/30'
-              }`}
-              title={`Chapter ${ch.chapterNumber}: ${ch.title}`}
-            />
-          ))}
-        </div>
-      </div>
+      {/* Desktop chapter rail (xl: only, fixed left side) */}
+      <ChapterRail
+        activeIndex={activeIndex}
+        totalChapters={totalChapters}
+        onNavigate={goToChapter}
+      />
 
-      {/* Main Page Stage (Normal document flow, content determines height) */}
-      <main className="page relative z-10">
-        <div className="chapter-layout-wrapper">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeChapter.id}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full"
-            >
-              <SpatialScene
-                chapter={activeChapter}
-                isActive={true}
-                mode={mode}
-                onOpenCompanion={handleOpenCompanion}
-              />
-            </motion.div>
-          </AnimatePresence>
-        </div>
+      {/* Full-viewport chapter stage — ONE chapter at a time */}
+      <main className="chapter-stage">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeChapterId}
+            className="chapter-stage-content"
+            initial={{
+              opacity: 0,
+              y: slideDirection * SLIDE_OFFSET,
+              filter: 'blur(6px)',
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              filter: 'blur(0px)',
+            }}
+            exit={{
+              opacity: 0,
+              y: -slideDirection * SLIDE_OFFSET,
+              filter: 'blur(4px)',
+            }}
+            transition={TRANSITION_CONFIG}
+          >
+            <SpatialScene
+              chapter={activeChapter}
+              isActive={true}
+              mode={mode}
+              onOpenCompanion={handleOpenCompanion}
+            />
+          </motion.div>
+        </AnimatePresence>
       </main>
 
-      {/* Living Onee Companion & Stably Mounted Overlay */}
+      {/* Chapter position indicator (mobile) */}
+      <div className="chapter-counter xl:hidden">
+        <span className="chapter-counter-current">
+          {String(activeIndex + 1).padStart(2, '0')}
+        </span>
+        <span className="chapter-counter-sep">/</span>
+        <span className="chapter-counter-total">
+          {String(totalChapters).padStart(2, '0')}
+        </span>
+      </div>
+
+      {/* Onee companion overlay — mounted once, shown/hidden via state */}
       <LivingOneeStage
         expression={currentMood}
         activeChapterId={activeChapterId}

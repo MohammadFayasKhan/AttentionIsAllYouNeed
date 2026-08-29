@@ -8,7 +8,7 @@
  *   - Residual connections: LayerNorm(x + SubLayer(x))
  *
  * Layout & Content Protection:
- *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
+ *   - Centered container with auto-height and full layer titles.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -167,7 +167,7 @@ export const TransformerArchitecture: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer">
+    <div className="w-full max-w-2xl mx-auto h-auto rounded-2xl bg-slate-50/80 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer self-center">
       {/* Header & Control Bar */}
       <div className="flex items-center justify-between border-b border-black/5 pb-1.5 gap-1.5 flex-wrap">
         <div>
@@ -182,11 +182,12 @@ export const TransformerArchitecture: React.FC = () => {
         <div className="flex items-center gap-1.5 font-mono text-xs flex-wrap">
           <button
             onClick={toggleAutoPlay}
-            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs focus-visible:ring-2 focus-visible:ring-apple-blue ${
               isPlaying
                 ? 'bg-apple-blue text-white hover:bg-blue-600'
                 : 'bg-slate-100 text-apple-secondary hover:text-apple-text hover:bg-slate-200'
             }`}
+            aria-label="Toggle auto-flow"
           >
             {isPlaying ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 fill-current" />}
             <span>{isPlaying ? 'Auto-Flow Active' : 'Play Auto-Flow'}</span>
@@ -196,7 +197,7 @@ export const TransformerArchitecture: React.FC = () => {
           <div className="flex items-center gap-0.5 bg-black/5 p-0.5 rounded-lg">
             <button
               onClick={() => handleStackToggle('encoder')}
-              className={`px-2 py-0.5 rounded-md font-bold transition-all text-[10px] ${
+              className={`px-2 py-0.5 rounded-md font-bold transition-all text-[10px] focus-visible:ring-2 focus-visible:ring-apple-blue ${
                 activeStack === 'encoder'
                   ? 'bg-white text-apple-blue shadow-apple-sm'
                   : 'text-apple-secondary hover:text-apple-text'
@@ -206,7 +207,7 @@ export const TransformerArchitecture: React.FC = () => {
             </button>
             <button
               onClick={() => handleStackToggle('decoder')}
-              className={`px-2 py-0.5 rounded-md font-bold transition-all text-[10px] ${
+              className={`px-2 py-0.5 rounded-md font-bold transition-all text-[10px] focus-visible:ring-2 focus-visible:ring-apple-blue ${
                 activeStack === 'decoder'
                   ? 'bg-white text-apple-purple shadow-apple-sm'
                   : 'text-apple-secondary hover:text-apple-text'
@@ -227,10 +228,10 @@ export const TransformerArchitecture: React.FC = () => {
             <button
               key={sub.id}
               onClick={() => handleSelectSublayer(idx)}
-              className={`p-2.5 rounded-xl flex items-center justify-between font-mono text-xs transition-all border text-left ${
+              className={`p-2.5 rounded-xl flex items-center justify-between font-mono text-xs transition-all border text-left focus-visible:ring-2 focus-visible:ring-apple-blue ${
                 isSelected
                   ? `${sub.bgLight} border-apple-blue font-bold shadow-apple-xs`
-                  : 'bg-slate-50 border-black/5 hover:bg-slate-100 text-apple-text'
+                  : 'bg-white border-black/5 hover:bg-slate-100 text-apple-text'
               }`}
             >
               <div className="flex items-center gap-1.5 min-w-0">
@@ -239,7 +240,7 @@ export const TransformerArchitecture: React.FC = () => {
                 ) : (
                   <Layers className={`w-3.5 h-3.5 shrink-0 ${isSelected ? sub.color : 'text-apple-blue'}`} />
                 )}
-                <span className={`text-[10px] sm:text-[11px] truncate ${isSelected ? sub.color : 'text-apple-text'}`}>
+                <span className={`text-[10px] sm:text-[11px] ${isSelected ? sub.color : 'text-apple-text'}`}>
                   {sub.name}
                 </span>
               </div>

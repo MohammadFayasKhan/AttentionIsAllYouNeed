@@ -8,7 +8,7 @@
  *   - Model size & dropout variations.
  *
  * Layout & Content Protection:
- *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
+ *   - Centered container with auto-height and full setting names.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -20,7 +20,6 @@ export const ModelVariationLab: React.FC = () => {
   const [selectedIdx, setSelectedIdx] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
 
-  // Key ablations from Table 3
   const ablationRows: Table3Row[] = [
     TABLE_3_VARIATIONS[0], // (A) Base Model Baseline (25.8 BLEU)
     TABLE_3_VARIATIONS[1], // (A) Single Head h=1 (24.9 BLEU, -0.9 drop)
@@ -55,7 +54,7 @@ export const ModelVariationLab: React.FC = () => {
   const selectedSetting = ablationRows[selectedIdx] || ablationRows[0];
 
   return (
-    <div className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer">
+    <div className="w-full max-w-2xl mx-auto h-auto rounded-2xl bg-slate-50/80 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer self-center">
       {/* Header & Control Bar */}
       <div className="flex items-center justify-between border-b border-black/5 pb-1.5 gap-1.5 flex-wrap">
         <div className="min-w-0">
@@ -71,11 +70,12 @@ export const ModelVariationLab: React.FC = () => {
         <div className="flex items-center gap-1 font-mono text-xs">
           <button
             onClick={toggleAutoPlay}
-            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs focus-visible:ring-2 focus-visible:ring-apple-blue ${
               isPlaying
                 ? 'bg-apple-blue text-white hover:bg-blue-600'
                 : 'bg-slate-100 text-apple-secondary hover:text-apple-text hover:bg-slate-200'
             }`}
+            aria-label="Toggle auto-sweep"
           >
             {isPlaying ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 fill-current" />}
             <span>{isPlaying ? 'Auto-Sweep' : 'Play'}</span>
@@ -100,11 +100,11 @@ export const ModelVariationLab: React.FC = () => {
                   ? 'bg-blue-50/90 border-apple-blue shadow-apple-xs font-bold'
                   : isBaseline
                   ? 'bg-blue-50/30 border-blue-200'
-                  : 'bg-slate-50 border-black/5 hover:bg-slate-100'
+                  : 'bg-white border-black/5 hover:bg-slate-100'
               }`}
             >
               <div className="flex items-center justify-between gap-1 mb-1">
-                <span className={`text-[10px] sm:text-[11px] font-bold truncate ${isSelected ? 'text-apple-blue' : 'text-apple-text'}`}>
+                <span className={`text-[10px] sm:text-[11px] font-bold ${isSelected ? 'text-apple-blue' : 'text-apple-text'}`}>
                   {varItem.setting}
                 </span>
                 <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded font-bold shrink-0 flex items-center gap-0.5 ${

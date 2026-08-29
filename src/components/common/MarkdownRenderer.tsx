@@ -10,8 +10,9 @@
  *      Uses a fast LRU/Map cache for KaTeX formulas so identical equations are parsed only once.
  *   2. Memoized Component:
  *      Wrapped with React.memo to prevent unnecessary re-parses during sibling state changes.
- *   3. Safe Streaming Parser:
- *      Handles unclosed delimiters gracefully without throwing errors or breaking UI.
+ *   3. Safe Mathematical Typesetting:
+ *      Uses overflow-x-auto on equation containers to allow horizontal scrolling of long
+ *      formulas on mobile without clipping or hiding behind ellipsis.
  */
 
 import React, { memo } from 'react';
@@ -34,7 +35,7 @@ const getCachedKaTeX = (math: string, displayMode: boolean): string => {
   }
 
   try {
-    let cleanMath = math.trim().replace(/\\math\{/g, '\\mathbf{');
+    const cleanMath = math.trim().replace(/\\math\{/g, '\\mathbf{');
     const html = katex.renderToString(cleanMath, {
       displayMode,
       throwOnError: false,
@@ -401,7 +402,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(({
   className = ''
 }) => {
   return (
-    <div className={`space-y-1 break-words overflow-hidden ${className}`}>
+    <div className={`space-y-1 break-words overflow-visible ${className}`}>
       {parseBlocks(content)}
       {isStreaming && (
         <span className="inline-block w-2 h-4 ml-1 bg-apple-blue animate-pulse align-middle font-mono shadow-apple-xs">

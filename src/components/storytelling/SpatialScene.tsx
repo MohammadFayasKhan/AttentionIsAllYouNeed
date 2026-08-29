@@ -9,12 +9,14 @@
  *   1. Single Source of Truth for Height (Shared Grid Row):
  *      - On desktop/tablet (lg:), Chapter panel and Onee panel are two columns inside
  *        one shared CSS Grid row (`items-stretch`).
- *      - Both panels stretch to exactly the same height, sharing identical top and bottom boundaries.
+ *      - Both panels stretch to match height smoothly.
  *   2. Content-Driven Distribution:
  *      - Chapter panel: Header → Interactive Visualizer → Narrative Body → Key Takeaway → Citation Footer.
- *      - Onee panel: Narrator Speech Bubble at top → Procedural 3D Avatar centered in flex-1 space → Quick Actions at bottom.
- *   3. Dynamic Mobile Stacking:
+ *      - Onee panel: Narrator Speech Bubble at top → Centered Avatar → Quick Actions at bottom.
+ *   3. Mobile Stacking:
  *      - Mobile (< lg:): Single-column document flow where Chapter renders first, followed by Onee dock.
+ *   4. Zero Accidental Text Truncation:
+ *      - All mathematical equations, source citations, and body text wrap cleanly without ellipsis.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -126,17 +128,17 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
     onOpenCompanion('chat');
   };
 
-  // Mount corresponding interactive visualizer engine in natural auto-height container
+  // Mount corresponding interactive visualizer engine
   const renderVisualizer = () => {
     switch (chapter.id) {
       case 'story-hook':
         return (
-          <div className="w-full rounded-2xl sm:rounded-3xl bg-slate-50/70 border border-black/5 shadow-apple-xs flex flex-col items-center justify-center p-5 sm:p-6 text-center">
+          <div className="w-full rounded-2xl sm:rounded-3xl bg-slate-50/80 border border-black/5 shadow-apple-xs flex flex-col items-center justify-center p-4 sm:p-6 text-center">
             <ParticleText
               text="ATTENTION IS ALL YOU NEED"
               color="#1d1d1f"
               highlightColor="#0071e3"
-              className="w-full h-36 sm:h-44"
+              className="w-full h-32 sm:h-40"
             />
             <p className="text-xs font-mono text-apple-secondary mt-2 max-w-md leading-relaxed">
               The landmark 2017 paper by Vaswani et al. that eliminated recurrence and established the Transformer architecture.
@@ -163,7 +165,7 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
         return <Sketchbook />;
       case 'story-conclusion':
         return (
-          <div className="w-full rounded-2xl sm:rounded-3xl bg-slate-50/70 border border-black/5 shadow-apple-xs flex flex-col items-center justify-center p-5 sm:p-6 text-center">
+          <div className="w-full rounded-2xl sm:rounded-3xl bg-slate-50/80 border border-black/5 shadow-apple-xs flex flex-col items-center justify-center p-4 sm:p-6 text-center">
             <div className="w-10 h-10 rounded-2xl bg-blue-100 text-apple-blue flex items-center justify-center font-bold text-base mb-2 shadow-apple-xs">
               ✨
             </div>
@@ -188,19 +190,18 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
 
   return (
     <div className="w-full">
-      {/* Shared Main Stage Grid Row — CSS Grid align-items:stretch ensures identical panel heights */}
+      {/* Shared Main Stage Grid Row */}
       <div className="chapter-layout">
-        {/* Left Column: Chapter Content Panel (content-driven height) */}
+        {/* Left Column: Chapter Content Panel */}
         <section
-          className="chapter-panel bg-white/90 rounded-3xl border border-black/5 shadow-apple-md flex flex-col justify-between gap-3 sm:gap-3.5"
-          style={{ padding: 'clamp(18px, 2.2vw, 28px)' }}
+          className="chapter-panel bg-white/95 rounded-2xl sm:rounded-3xl border border-black/5 shadow-apple-md flex flex-col justify-between gap-3 sm:gap-4 p-3.5 sm:p-5 lg:p-7"
         >
-          {/* Main Chapter Content Body Flow (normal document flow, gap-driven spacing) */}
-          <div className="flex flex-col min-w-0 flex-1" style={{ gap: 'clamp(10px, 1.2vw, 16px)' }}>
+          {/* Main Chapter Content Body Flow */}
+          <div className="flex flex-col min-w-0 flex-1 gap-2.5 sm:gap-3.5">
             {/* 1. Header: Chapter Badge, Title & Subtitle */}
-            <div className="space-y-1 shrink-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] sm:text-[11px] font-mono font-bold text-apple-blue tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 flex items-center gap-1.5">
+            <div className="space-y-1.5 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <span className="text-[10px] sm:text-[11px] font-mono font-bold text-apple-blue tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 flex items-center gap-1.5 shadow-apple-xs">
                   <Tag className="w-3 h-3" />
                   Chapter {chapter.chapterNumber} • {chapter.eyebrow}
                 </span>
@@ -209,7 +210,7 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
                 </span>
               </div>
 
-              <h2 className="text-base sm:text-xl lg:text-2xl font-bold text-apple-text tracking-tight font-mono break-words">
+              <h2 className="text-base sm:text-xl lg:text-2xl font-bold text-apple-text tracking-tight font-mono break-words leading-snug">
                 {chapter.title}
               </h2>
 
@@ -219,19 +220,19 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
               </div>
             </div>
 
-            {/* 2. Interactive Visualizer Component Card (Pure Content-Driven Height) */}
-            <div className="w-full my-0.5 min-w-0">
+            {/* 2. Interactive Visualizer Component Card */}
+            <div className="w-full my-1 min-w-0 max-w-full overflow-visible">
               {renderVisualizer()}
             </div>
 
             {/* 3. Detailed Narrative Body & Mathematical Explanations */}
-            <div className="pt-1.5 border-t border-black/5 text-xs text-apple-secondary leading-relaxed font-sans space-y-2 break-words">
+            <div className="pt-2 border-t border-black/5 text-xs text-apple-secondary leading-relaxed font-sans space-y-2 break-words">
               <MarkdownRenderer content={activeBody} />
             </div>
 
             {/* 4. Prominent Key Takeaway Card */}
-            <div className="p-2.5 sm:p-3 rounded-2xl bg-blue-50/70 border border-blue-200/80 text-xs text-apple-text font-sans flex items-start gap-2.5 shadow-apple-xs">
-              <div className="w-5 h-5 rounded-lg bg-blue-100 text-apple-blue flex items-center justify-center shrink-0 mt-0.5 font-bold">
+            <div className="p-3 sm:p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200 text-xs text-apple-text font-sans flex items-start gap-2.5 shadow-apple-xs">
+              <div className="w-5 h-5 rounded-lg bg-blue-100 text-apple-blue flex items-center justify-center shrink-0 mt-0.5 font-bold shadow-apple-xs">
                 💡
               </div>
               <div className="min-w-0 flex-1">
@@ -245,30 +246,33 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
             </div>
           </div>
 
-          {/* 5. Footer Paper Citation (Tightly bounds the bottom edge of the card) */}
-          <div className="pt-2.5 border-t border-black/5 flex items-center justify-between text-[10px] font-mono text-apple-tertiary flex-wrap gap-1 shrink-0">
-            <span className="flex items-center gap-1.5 truncate">
+          {/* 5. Footer Paper Citation - No Text Truncation */}
+          <div className="pt-2.5 border-t border-black/5 flex items-center justify-between text-[10px] font-mono text-apple-tertiary flex-wrap gap-1.5 shrink-0">
+            <span className="flex items-center gap-1.5 flex-wrap">
               <BookOpen className="w-3.5 h-3.5 text-apple-blue shrink-0" />
-              <span className="truncate">Source: Vaswani et al. (2017) ➔ {chapter.sourceReference.section} (Page {chapter.sourceReference.page})</span>
+              <span>Source: Vaswani et al. (2017) ➔ {chapter.sourceReference.section} (Page {chapter.sourceReference.page})</span>
             </span>
             <span className="text-apple-blue font-bold hidden sm:inline-block shrink-0">
-              Scroll / Wheel ↓ Next Chapter
+              Vaswani et al. (2017)
             </span>
           </div>
         </section>
 
-        {/* Right Column: Dedicated Living Onee Avatar Companion Dock (stretches to shared row height) */}
+        {/* Living Onee Avatar Companion Dock */}
         <aside
-          className="onee-panel flex flex-col justify-between gap-3 sm:gap-3.5 bg-gradient-to-b from-blue-50/90 via-indigo-50/60 to-purple-50/70 rounded-3xl border border-black/5 shadow-apple-md"
-          style={{ padding: 'clamp(18px, 2.2vw, 28px)' }}
+          className="onee-panel flex flex-col justify-between gap-2.5 sm:gap-3.5 bg-gradient-to-b from-blue-50/90 via-indigo-50/60 to-purple-50/70 rounded-2xl sm:rounded-3xl border border-black/5 shadow-apple-md p-3.5 sm:p-5 lg:p-7 w-full"
         >
           {/* Top: Contextual Narrator Speech Bubble */}
           <div
-            className="p-3 rounded-2xl bg-white/95 border border-black/10 shadow-apple-sm text-xs font-mono text-apple-secondary cursor-pointer hover:border-blue-300 transition-all select-none relative z-20 shrink-0"
+            className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-white/95 border border-black/10 shadow-apple-sm text-xs font-mono text-apple-secondary cursor-pointer hover:border-blue-300 transition-all select-none relative z-20 shrink-0"
             onClick={handleAvatarTap}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleAvatarTap(); }}
+            aria-label="Tap to open Onee conversation"
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-apple-blue font-bold flex items-center gap-1.5">
+              <span className="text-apple-blue font-bold flex items-center gap-1.5 text-[11px] sm:text-xs">
                 <Sparkles className="w-3.5 h-3.5" />
                 Onee Narrator
               </span>
@@ -279,29 +283,35 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
             </p>
           </div>
 
-          {/* Center: Prominently Centered 3D Onee Avatar in Flex-1 space */}
+          {/* Center: Centered 3D Onee Avatar */}
           <div
-            className="flex-1 flex flex-col items-center justify-center cursor-pointer group select-none py-2 relative z-10 min-h-[120px]"
+            className="flex-1 flex flex-col items-center justify-center cursor-pointer group select-none py-2 relative z-10 min-h-[130px] sm:min-h-[150px]"
             onClick={handleAvatarTap}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleAvatarTap(); }}
+            aria-label="Onee 3D Avatar - Click to chat"
           >
             <div className="relative flex flex-col items-center">
               {/* Luminous Glow Aura */}
               <div
-                className="absolute -inset-8 rounded-full pointer-events-none filter blur-xl opacity-70"
+                className="absolute -inset-6 sm:-inset-8 rounded-full pointer-events-none filter blur-xl opacity-70"
                 style={{
                   background: 'radial-gradient(circle, rgba(0, 113, 227, 0.3) 0%, rgba(99, 102, 241, 0.18) 45%, transparent 75%)'
                 }}
               />
 
-              <AvatarController
-                ref={avatarRef}
-                animation={currentAnim}
-                size={175}
-                className="relative z-10 filter drop-shadow-xl"
-                onClick={handleAvatarTap}
-              />
+              <div className="w-[130px] h-[130px] sm:w-[160px] sm:h-[160px] lg:w-[175px] lg:h-[175px] flex items-center justify-center relative z-10">
+                <AvatarController
+                  ref={avatarRef}
+                  animation={currentAnim}
+                  size="100%"
+                  className="filter drop-shadow-xl w-full h-full"
+                  onClick={handleAvatarTap}
+                />
+              </div>
 
-              <div className="mt-1.5 px-3 py-1 rounded-full bg-apple-blue text-white shadow-apple-md text-[11px] font-mono font-bold flex items-center gap-1.5 group-hover:bg-blue-600 transition-all relative z-20">
+              <div className="mt-1.5 px-3 py-1 rounded-full bg-apple-blue text-white shadow-apple-md text-[10px] sm:text-[11px] font-mono font-bold flex items-center gap-1.5 group-hover:bg-blue-600 transition-all relative z-20">
                 <Sparkles className="w-3 h-3" />
                 <span>Ask Onee AI</span>
               </div>
@@ -309,33 +319,33 @@ export const SpatialScene: React.FC<SpatialSceneProps> = ({
           </div>
 
           {/* Bottom: Quick Action Navigation Launcher Pills */}
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-black/5 shrink-0">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-1.5 sm:gap-2 pt-2 border-t border-black/5 shrink-0">
             <button
               onClick={() => onOpenCompanion('chat')}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl bg-white border border-black/10 shadow-apple-xs hover:border-blue-300 hover:text-apple-blue text-apple-secondary text-xs font-mono font-bold transition-all"
+              className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl sm:rounded-2xl bg-white border border-black/10 shadow-apple-xs hover:border-blue-300 hover:text-apple-blue text-apple-secondary text-[11px] sm:text-xs font-mono font-bold transition-all min-h-[40px] focus-visible:ring-2 focus-visible:ring-apple-blue"
             >
-              <MessageSquare className="w-3.5 h-3.5" />
+              <MessageSquare className="w-3.5 h-3.5 text-apple-blue" />
               <span>Q&A Chat</span>
             </button>
             <button
               onClick={() => onOpenCompanion('quiz')}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl bg-white border border-black/10 shadow-apple-xs hover:border-blue-300 hover:text-apple-blue text-apple-secondary text-xs font-mono font-bold transition-all"
+              className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl sm:rounded-2xl bg-white border border-black/10 shadow-apple-xs hover:border-blue-300 hover:text-apple-blue text-apple-secondary text-[11px] sm:text-xs font-mono font-bold transition-all min-h-[40px] focus-visible:ring-2 focus-visible:ring-apple-blue"
             >
-              <HelpCircle className="w-3.5 h-3.5" />
+              <HelpCircle className="w-3.5 h-3.5 text-apple-purple" />
               <span>Quiz</span>
             </button>
             <button
               onClick={() => onOpenCompanion('flashcards')}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl bg-white border border-black/10 shadow-apple-xs hover:border-blue-300 hover:text-apple-blue text-apple-secondary text-xs font-mono font-bold transition-all"
+              className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl sm:rounded-2xl bg-white border border-black/10 shadow-apple-xs hover:border-blue-300 hover:text-apple-blue text-apple-secondary text-[11px] sm:text-xs font-mono font-bold transition-all min-h-[40px] focus-visible:ring-2 focus-visible:ring-apple-blue"
             >
-              <Layers className="w-3.5 h-3.5" />
+              <Layers className="w-3.5 h-3.5 text-apple-emerald" />
               <span>Flashcards</span>
             </button>
             <button
               onClick={() => onOpenCompanion('notebook')}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl bg-white border border-black/10 shadow-apple-xs hover:border-blue-300 hover:text-apple-blue text-apple-secondary text-xs font-mono font-bold transition-all"
+              className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl sm:rounded-2xl bg-white border border-black/10 shadow-apple-xs hover:border-blue-300 hover:text-apple-blue text-apple-secondary text-[11px] sm:text-xs font-mono font-bold transition-all min-h-[40px] focus-visible:ring-2 focus-visible:ring-apple-blue"
             >
-              <Book className="w-3.5 h-3.5" />
+              <Book className="w-3.5 h-3.5 text-apple-amber" />
               <span>3D Book</span>
             </button>
           </div>

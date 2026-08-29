@@ -89,26 +89,29 @@ export const LivingOneeStage: React.FC<LivingOneeStageProps> = ({
   return (
     <>
       {/* Mobile-Only Floating Onee Assistant Trigger */}
-      <div className="lg:hidden fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-30 flex flex-col items-end pointer-events-none select-none max-w-[calc(100vw-1.5rem)]">
-        {/* Caption Bubble */}
-        {currentCaptionText && !isOpen && (
+      <div
+        className="lg:hidden fixed right-3.5 z-30 flex flex-col items-end pointer-events-none select-none max-w-[calc(100vw-2rem)]"
+        style={{ bottom: 'max(16px, env(safe-area-inset-bottom, 16px))' }}
+      >
+        {/* Dynamic Caption Bubble (Only visible temporarily on dynamic reaction events, never permanently stuck) */}
+        {activeCaption && !isOpen && (
           <div
-            className="mb-2 max-w-[240px] px-3 py-2 rounded-2xl bg-white/95 border border-black/10 shadow-apple-md text-xs font-mono text-apple-secondary pointer-events-auto cursor-pointer text-left break-words animate-in fade-in slide-in-from-bottom-2 duration-200"
+            className="mb-2 max-w-[220px] px-3 py-2 rounded-2xl bg-white/95 border border-black/10 shadow-apple-md text-xs font-mono text-apple-secondary pointer-events-auto cursor-pointer text-left break-words animate-in fade-in slide-in-from-bottom-2 duration-200"
             onClick={() => onOpen('chat')}
           >
-            <span className="text-apple-blue font-bold block mb-0.5 text-[10px]">Onee Narrator:</span>
-            <span className="text-[11px] text-apple-text font-sans">{currentCaptionText}</span>
+            <span className="text-apple-blue font-bold block mb-0.5 text-[10px]">Onee:</span>
+            <span className="text-[11px] text-apple-text font-sans leading-snug">{activeCaption}</span>
           </div>
         )}
 
-        {/* Floating Action Button */}
+        {/* Unobtrusive Floating Action Button */}
         {!isOpen && (
           <button
             onClick={() => onOpen('chat')}
-            className="pointer-events-auto flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-apple-blue text-white shadow-apple-lg text-xs font-mono font-bold hover:bg-blue-600 active:scale-95 transition-all"
+            className="pointer-events-auto flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-apple-blue text-white shadow-apple-md text-[11px] font-mono font-bold hover:bg-blue-600 active:scale-95 transition-all"
             aria-label="Open Onee Assistant"
           >
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className="w-3.5 h-3.5" />
             <span>Ask Onee</span>
           </button>
         )}

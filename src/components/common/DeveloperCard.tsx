@@ -6,15 +6,15 @@
  *
  * Features:
  *   - Profile Photo from authentic asset (src/MyPic.jpeg).
- *   - Direct verified clickable links to LinkedIn, Instagram, and GitHub.
- *   - Gen Z tech stack chips (AI/ML, DSA, Web Dev, IoT, CSE @ LPU).
- *   - Compact variant for chapter footers and full variant for the companion modal.
+ *   - Verified clickable links to LinkedIn, Instagram, and GitHub.
+ *   - Focus chips (AI/ML, DSA, Web Dev, IoT, CSE @ LPU).
+ *   - Centered layout with clean responsive wrapping and zero accidental text cutting.
  */
 
 import React from 'react';
 import myPic from '../../MyPic.jpeg';
 import { motion } from 'framer-motion';
-import { Github, Linkedin, Instagram, Code2, Sparkles, ExternalLink, Heart, Terminal, GraduationCap, Cpu } from 'lucide-react';
+import { Github, Linkedin, Instagram, Code2, Sparkles, ExternalLink, Heart, Terminal } from 'lucide-react';
 
 interface DeveloperCardProps {
   className?: string;
@@ -56,12 +56,12 @@ export const DeveloperCard: React.FC<DeveloperCardProps> = ({ className = '', is
 
   if (isCompact) {
     return (
-      <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-2xl bg-white/90 border border-blue-200/80 shadow-apple-sm backdrop-blur-md font-sans ${className}`}>
-        <div className="flex items-center gap-3 min-w-0">
+      <div className={`w-full max-w-xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-white/90 border border-blue-200/80 shadow-apple-sm backdrop-blur-md font-sans ${className}`}>
+        <div className="flex items-center gap-2.5 min-w-0 max-w-full">
           <img
             src={myPic}
             alt="Mohammad Fayas Khan"
-            className="w-10 h-10 rounded-full object-cover border border-blue-300 shadow-apple-xs shrink-0"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-blue-300 shadow-apple-xs shrink-0"
           />
           <div className="min-w-0 text-left">
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -69,7 +69,7 @@ export const DeveloperCard: React.FC<DeveloperCardProps> = ({ className = '', is
                 href="https://www.linkedin.com/in/mohammadfayaskhan/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-bold text-apple-text font-mono hover:text-apple-blue transition-colors truncate"
+                className="text-xs font-bold text-apple-text font-mono hover:text-apple-blue transition-colors focus-visible:ring-2 focus-visible:ring-apple-blue rounded"
               >
                 Mohammad Fayas Khan
               </a>
@@ -77,13 +77,13 @@ export const DeveloperCard: React.FC<DeveloperCardProps> = ({ className = '', is
                 Creator
               </span>
             </div>
-            <p className="text-[10px] text-apple-secondary font-mono truncate">
+            <p className="text-[10px] text-apple-secondary font-mono">
               Aspiring AI/ML Engineer • CSE @ LPU
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
           {socialLinks.map((link) => {
             const Icon = link.icon;
             return (
@@ -92,8 +92,9 @@ export const DeveloperCard: React.FC<DeveloperCardProps> = ({ className = '', is
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-1.5 rounded-xl border border-black/5 bg-slate-50 text-apple-secondary hover:text-apple-blue hover:bg-blue-50 transition-all shadow-apple-xs"
+                className="p-1.5 rounded-xl border border-black/5 bg-slate-50 text-apple-secondary hover:text-apple-blue hover:bg-blue-50 transition-all shadow-apple-xs focus-visible:ring-2 focus-visible:ring-apple-blue"
                 title={`${link.name}: ${link.handle}`}
+                aria-label={`Open ${link.name} profile`}
               >
                 <Icon className="w-3.5 h-3.5" />
               </a>
@@ -106,85 +107,85 @@ export const DeveloperCard: React.FC<DeveloperCardProps> = ({ className = '', is
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-      className={`w-full max-w-xl mx-auto rounded-3xl bg-gradient-to-br from-blue-50/90 via-white to-slate-50 border border-blue-200/80 p-6 shadow-apple-md font-sans text-left relative overflow-hidden ${className}`}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className={`w-full max-w-xl mx-auto rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-50/90 via-white to-slate-50 border border-blue-200/80 p-4 sm:p-6 shadow-apple-md font-sans text-left relative overflow-hidden self-center ${className}`}
     >
       {/* Background Ambient Glow */}
       <div className="absolute -right-12 -top-12 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -left-12 -bottom-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Top Badge */}
-      <div className="flex items-center justify-between border-b border-black/5 pb-4 mb-5">
+      <div className="flex flex-wrap items-center justify-between border-b border-black/5 pb-3 mb-4 gap-2">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-blue-100/80 border border-blue-200 flex items-center justify-center text-apple-blue font-bold shadow-apple-xs">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-blue-100/80 border border-blue-200 flex items-center justify-center text-apple-blue font-bold shadow-apple-xs shrink-0">
             <Code2 className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-apple-text font-mono flex items-center gap-2">
+            <h3 className="text-xs sm:text-sm font-bold text-apple-text font-mono flex items-center gap-1.5 flex-wrap">
               <span>Developer Acknowledgement</span>
-              <span className="text-[9px] bg-blue-100 text-apple-blue font-bold px-2 py-0.5 rounded-full uppercase">
+              <span className="text-[8px] sm:text-[9px] bg-blue-100 text-apple-blue font-bold px-1.5 py-0.2 rounded-full uppercase">
                 Creator
               </span>
             </h3>
-            <p className="text-[10px] text-apple-secondary font-mono">
+            <p className="text-[9px] sm:text-[10px] text-apple-secondary font-mono">
               Designed & Built with Attention to Detail
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1 text-[10px] font-mono text-apple-blue bg-white border border-blue-200 px-2.5 py-1 rounded-full shadow-apple-xs font-semibold">
+        <div className="flex items-center gap-1 text-[9px] sm:text-[10px] font-mono text-apple-blue bg-white border border-blue-200 px-2 py-0.5 rounded-full shadow-apple-xs font-semibold">
           <Sparkles className="w-3 h-3" />
           <span>Vaswani et al. 2017</span>
         </div>
       </div>
 
       {/* Developer Profile Header */}
-      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 mb-3">
         {/* Profile Picture */}
         <div className="relative group shrink-0">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-blue-300 shadow-apple-md bg-slate-100 relative">
+          <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-blue-300 shadow-apple-md bg-slate-100 relative">
             <img
               src={myPic}
               alt="Mohammad Fayas Khan"
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           </div>
-          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center shadow-apple-xs" title="Active Developer">
-            <span className="w-2 h-2 rounded-full bg-white" />
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center shadow-apple-xs" title="Active Developer">
+            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />
           </div>
         </div>
 
         {/* Bio & Headline */}
-        <div className="flex-1 text-center sm:text-left space-y-1.5">
-          <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+        <div className="flex-1 text-center sm:text-left space-y-1">
+          <div className="flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
             <a
               href="https://www.linkedin.com/in/mohammadfayaskhan/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-lg font-bold text-apple-text font-mono hover:text-apple-blue transition-colors flex items-center gap-1.5"
+              className="text-base sm:text-lg font-bold text-apple-text font-mono hover:text-apple-blue transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-apple-blue rounded"
             >
               <span>Mohammad Fayas Khan</span>
               <ExternalLink className="w-3.5 h-3.5 text-apple-blue" />
             </a>
           </div>
-          <p className="text-xs text-apple-blue font-mono font-semibold flex items-center justify-center sm:justify-start gap-1.5">
-            <Terminal className="w-3.5 h-3.5" />
-            <span>Aspiring AI/ML Engineer | CSE Student @ LPU</span>
+          <p className="text-[11px] sm:text-xs text-apple-blue font-mono font-semibold flex items-center justify-center sm:justify-start gap-1">
+            <Terminal className="w-3 h-3" />
+            <span>Aspiring AI/ML Engineer | CSE @ LPU</span>
           </p>
-          <p className="text-xs text-apple-secondary leading-relaxed font-sans pt-0.5">
+          <p className="text-[11px] sm:text-xs text-apple-secondary leading-relaxed font-sans pt-0.5">
             Passionate about <strong>AI/ML</strong>, <strong>DSA</strong>, <strong>Web Dev</strong> & <strong>IoT</strong>. Built this interactive research companion to make the Transformer architecture and mathematical foundations tangible.
           </p>
         </div>
       </div>
 
       {/* Gen-Z Tech & Focus Chips */}
-      <div className="flex items-center gap-1.5 flex-wrap my-3.5 py-2 px-3 rounded-2xl bg-blue-50/50 border border-blue-100 font-mono text-[11px]">
-        <span className="text-[10px] font-bold text-apple-blue uppercase tracking-wider mr-1">Focus:</span>
+      <div className="flex items-center gap-1.5 flex-wrap my-3 py-1.5 px-2.5 rounded-xl bg-blue-50/50 border border-blue-100 font-mono text-[10px] sm:text-[11px]">
+        <span className="text-[9px] sm:text-[10px] font-bold text-apple-blue uppercase tracking-wider mr-0.5">Focus:</span>
         {genzTags.map((tag) => (
           <span
             key={tag.label}
-            className="px-2.5 py-0.5 rounded-full bg-white border border-blue-200/70 text-apple-text font-semibold shadow-apple-xs flex items-center gap-1"
+            className="px-2 py-0.5 rounded-full bg-white border border-blue-200/70 text-apple-text font-semibold shadow-apple-xs flex items-center gap-1"
           >
             <span>{tag.icon}</span>
             <span>{tag.label}</span>
@@ -193,7 +194,7 @@ export const DeveloperCard: React.FC<DeveloperCardProps> = ({ className = '', is
       </div>
 
       {/* Social Links Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-black/5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-black/5">
         {socialLinks.map((link) => {
           const Icon = link.icon;
           return (
@@ -202,7 +203,8 @@ export const DeveloperCard: React.FC<DeveloperCardProps> = ({ className = '', is
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`p-3 rounded-2xl border border-black/10 transition-all flex items-center justify-between group shadow-apple-xs ${link.color}`}
+              className={`p-2.5 sm:p-3 rounded-2xl border border-black/10 transition-all flex items-center justify-between group shadow-apple-xs focus-visible:ring-2 focus-visible:ring-apple-blue ${link.color}`}
+              aria-label={`Visit ${link.name} profile (${link.handle})`}
             >
               <div className="flex items-center gap-2 min-w-0">
                 <Icon className="w-4 h-4 text-apple-text group-hover:scale-110 transition-transform shrink-0" />
@@ -218,7 +220,7 @@ export const DeveloperCard: React.FC<DeveloperCardProps> = ({ className = '', is
       </div>
 
       {/* Bottom Footer Note */}
-      <div className="mt-4 pt-3 border-t border-black/5 flex items-center justify-between text-[10px] font-mono text-apple-tertiary">
+      <div className="mt-3 pt-2.5 border-t border-black/5 flex items-center justify-between text-[9px] sm:text-[10px] font-mono text-apple-tertiary flex-wrap gap-1">
         <span className="flex items-center gap-1">
           <span>Crafted with</span>
           <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />

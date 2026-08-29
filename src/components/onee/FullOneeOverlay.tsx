@@ -359,7 +359,7 @@ export const FullOneeOverlay: React.FC<FullOneeOverlayProps> = ({
           </div>
 
           {/* Right Column: Active Interactive Panel */}
-          <div className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-5 flex flex-col justify-center min-h-0 allow-inner-scroll">
+          <div className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-5 flex flex-col justify-start min-h-0 allow-inner-scroll">
             {activeTab === 'chat' && (
               <ChatPanel
                 activeChapterId={activeChapterId}
@@ -370,15 +370,17 @@ export const FullOneeOverlay: React.FC<FullOneeOverlayProps> = ({
               <Quiz chapterId={activeChapterId} mode={mode} />
             )}
             {activeTab === 'flashcards' && (
-              <Flashcards initialChapterId={activeChapterId} mode={mode} />
+              <div className="w-full h-auto py-2 flex items-center justify-center">
+                <Flashcards initialChapterId={activeChapterId} mode={mode} />
+              </div>
             )}
             {activeTab === 'notebook' && (
-              <div className="w-full h-full min-h-[380px] sm:min-h-[460px]">
+              <div className="w-full h-auto min-h-0 py-2 flex items-center justify-center">
                 <Sketchbook />
               </div>
             )}
             {activeTab === 'developer' && (
-              <div className="w-full h-full flex items-center justify-center p-2 sm:p-4">
+              <div className="w-full h-auto py-2 flex items-center justify-center">
                 <DeveloperCard />
               </div>
             )}

@@ -6,7 +6,7 @@
  * computation of the Transformer Self-Attention mechanism (Vaswani et al. 2017, Section 1).
  *
  * Layout & Content Protection:
- *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
+ *   - Centered container with auto-height and responsive comparison boxes.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -40,7 +40,7 @@ export const SequentialVsParallel: React.FC<SequentialVsParallelProps> = ({ isAc
   const currentToken = tokens[Math.min(step, tokens.length - 1)];
 
   return (
-    <div className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer">
+    <div className="w-full max-w-2xl mx-auto h-auto rounded-2xl bg-slate-50/80 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer self-center">
       {/* Header Bar */}
       <div className="flex items-center justify-between border-b border-black/5 pb-1.5 flex-wrap gap-1.5">
         <div>
@@ -52,19 +52,21 @@ export const SequentialVsParallel: React.FC<SequentialVsParallelProps> = ({ isAc
         <div className="flex items-center gap-1 font-mono text-xs">
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            className={`px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 shadow-apple-xs text-[10px] transition-all ${
+            className={`px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 shadow-apple-xs text-[10px] transition-all focus-visible:ring-2 focus-visible:ring-apple-blue ${
               isPlaying
                 ? 'bg-apple-blue text-white hover:bg-blue-600'
                 : 'bg-slate-100 text-apple-secondary hover:text-apple-text hover:bg-slate-200'
             }`}
+            aria-label="Toggle playback"
           >
             {isPlaying ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 fill-current" />}
             <span>{isPlaying ? 'Auto-Sweep' : 'Play'}</span>
           </button>
           <button
             onClick={() => setStep(0)}
-            className="p-1 rounded-full bg-black/5 text-apple-secondary hover:text-apple-text transition-all"
+            className="p-1 rounded-full bg-black/5 text-apple-secondary hover:text-apple-text transition-all focus-visible:ring-2 focus-visible:ring-apple-blue"
             title="Reset to Step 0"
+            aria-label="Reset step"
           >
             <RotateCcw className="w-3 h-3" />
           </button>
@@ -109,7 +111,7 @@ export const SequentialVsParallel: React.FC<SequentialVsParallelProps> = ({ isAc
                         : 'bg-white/80 text-apple-tertiary border-black/5'
                     }`}
                   >
-                    <span className="block truncate">{token}</span>
+                    <span className="block font-bold">{token}</span>
                     <span className="block text-[8px] opacity-75 font-mono font-normal">
                       t={idx + 1}
                     </span>

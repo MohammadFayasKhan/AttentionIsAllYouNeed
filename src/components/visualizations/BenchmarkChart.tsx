@@ -6,8 +6,7 @@
  * on WMT 2014 English-to-German and English-to-French (Vaswani et al. 2017, Table 2 & Section 5).
  *
  * Layout & Content Protection:
- *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
- *   - Preserves all model benchmarks (Transformer big/base, ByteNet, GNMT, ConvS2S).
+ *   - Centered container with auto-height and full model names.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -19,7 +18,6 @@ export const BenchmarkChart: React.FC = () => {
   const [selectedIdx, setSelectedIdx] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
 
-  // Representative subset of Table 2 models
   const benchmarkModels: Table2Row[] = [
     TABLE_2_TRANSLATION[1], // Transformer (big) - 28.4 BLEU
     TABLE_2_TRANSLATION[0], // Transformer (base) - 27.3 BLEU
@@ -58,7 +56,7 @@ export const BenchmarkChart: React.FC = () => {
   const activeModel = benchmarkModels[selectedIdx] || benchmarkModels[0];
 
   return (
-    <div className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer">
+    <div className="w-full max-w-2xl mx-auto h-auto rounded-2xl bg-slate-50/80 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer self-center">
       {/* Header & Control Bar */}
       <div className="flex items-center justify-between border-b border-black/5 pb-1.5 gap-1.5 flex-wrap">
         <div className="min-w-0">
@@ -74,11 +72,12 @@ export const BenchmarkChart: React.FC = () => {
         <div className="flex items-center gap-1 font-mono text-xs">
           <button
             onClick={toggleAutoPlay}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold transition-all shadow-apple-xs ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs focus-visible:ring-2 focus-visible:ring-apple-blue ${
               isPlaying
                 ? 'bg-apple-blue text-white hover:bg-blue-600'
                 : 'bg-slate-100 text-apple-secondary hover:text-apple-text hover:bg-slate-200'
             }`}
+            aria-label="Toggle auto-sweep"
           >
             {isPlaying ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 fill-current" />}
             <span>{isPlaying ? 'Auto-Sweep' : 'Play'}</span>
@@ -87,7 +86,7 @@ export const BenchmarkChart: React.FC = () => {
       </div>
 
       {/* Interactive Models Benchmark Ladder */}
-      <div className="flex flex-col gap-1 w-full">
+      <div className="flex flex-col gap-1.5 w-full">
         {benchmarkModels.map((item: Table2Row, idx: number) => {
           const isSelected = idx === selectedIdx;
           const bleuScore = item.bleuEnDe || 23.0;
@@ -102,12 +101,12 @@ export const BenchmarkChart: React.FC = () => {
                   ? 'bg-blue-50/90 border-apple-blue shadow-apple-xs font-bold'
                   : item.isTransformer
                   ? 'bg-blue-50/30 border-blue-200'
-                  : 'bg-slate-50 border-black/5 hover:bg-slate-100'
+                  : 'bg-white border-black/5 hover:bg-slate-100'
               }`}
             >
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-[10px] sm:text-[11px] font-bold truncate ${item.isTransformer ? 'text-apple-blue' : 'text-apple-text'}`}>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={`text-[10px] sm:text-[11px] font-bold ${item.isTransformer ? 'text-apple-blue' : 'text-apple-text'}`}>
                     {item.model}
                   </span>
                   {item.isTransformer && (

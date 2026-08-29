@@ -13,7 +13,7 @@
 }
 .bs-avatar:focus-visible {
   outline-offset: 3px;
-  outline: 3px solid;
+  outline: 3px solid #0071e3;
 }
 .bs-avatar__svg {
   pointer-events: none;
@@ -22,133 +22,244 @@
   display: block;
   overflow: visible;
 }
-@media (prefers-reduced-motion: reduce) {
-  .bs-avatar,
-  .bs-avatar * {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-  }
-}
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Apple Design Tokens & CSS Custom Properties ─── */
 :root {
-  --chapter-top-gap: clamp(14px, 2vh, 22px);
-}
-
-.page {
-  padding-top: var(--chapter-top-gap);
-  padding-bottom: 24px;
-  width: 100%;
-}
-
-.chapter-layout-wrapper {
-  width: 100%;
-  max-width: 80rem;
-  margin-inline: auto;
-  padding-inline: 1rem;
+  --navbar-height: 56px;
+  --chapter-gap: clamp(32px, 6vh, 64px);
+  --ease-apple: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --color-apple-bg: #f5f5f7;
+  --color-apple-text: #1d1d1f;
+  --color-apple-secondary: #86868b;
+  --color-apple-blue: #0071e3;
 }
 
 @media (min-width: 640px) {
-  .chapter-layout-wrapper {
-    padding-inline: 1.5rem;
+  :root {
+    --navbar-height: 64px;
   }
 }
 
+/* ─── Document root: Full-viewport, no page-level scrolling ─── */
+html {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-apple-bg);
+  color: var(--color-apple-text);
+}
+
+/* ─── App root container ─── */
+.app-root {
+  width: 100%;
+  height: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  position: relative;
+  background-color: var(--color-apple-bg);
+  color: var(--color-apple-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ─── Full-viewport chapter stage ────────────────────────────────
+ * Fills the viewport below the navbar.
+ * ONE chapter rendered at a time with AnimatePresence transitions.
+ * ─────────────────────────────────────────────────────────────*/
+.chapter-stage {
+  position: fixed;
+  top: var(--navbar-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  overflow: hidden;
+}
+
+/* ─── Chapter content wrapper (scrollable when content overflows) ─── */
+.chapter-stage-content {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: clamp(16px, 3vw, 32px);
+  padding-bottom: clamp(48px, 10vh, 120px);
+  box-sizing: border-box;
+}
+
+/* Mark the inner content as scrollable so wheel events pass through */
+.chapter-stage-content[data-scrollable] {
+  overflow-y: auto;
+}
+
+/* ─── Layout centering (replaces old chapter-layout-wrapper) ─── */
+.chapter-stage-content > * {
+  width: min(100% - 1.5rem, 80rem);
+  margin-inline: auto;
+}
+@media (min-width: 640px) {
+  .chapter-stage-content > * {
+    width: min(100% - 3rem, 80rem);
+  }
+}
 @media (min-width: 1024px) {
-  .chapter-layout-wrapper {
-    padding-inline: 2rem;
+  .chapter-stage-content > * {
+    width: min(100% - 4rem, 80rem);
   }
 }
 
-/* ─── Chapter + Onee Shared Grid Layout ─── */
+/* ─── Mobile chapter counter ─── */
+.chapter-counter {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  font-family: 'SF Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+}
+.chapter-counter-current {
+  color: var(--color-apple-blue);
+}
+.chapter-counter-sep {
+  color: var(--color-apple-secondary);
+  margin: 0 1px;
+}
+.chapter-counter-total {
+  color: var(--color-apple-secondary);
+}
+
+/* ─── Chapter + Onee two-column grid ─── */
 .chapter-layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: clamp(20px, 2vw, 32px);
-  align-items: stretch;
+  gap: clamp(14px, 2vw, 28px);
+  align-items: start;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
-
 @media (min-width: 1024px) {
   .chapter-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.42fr);
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.42fr);
+    align-items: stretch;
   }
 }
 
+/* ─── Panel base styles ─────────────────────────────────────────
+ * Overflow visible so panels never create unintended nested scroll traps.
+ * ─────────────────────────────────────────────────────────────*/
 .chapter-panel,
 .onee-panel {
   min-width: 0;
+  max-width: 100%;
+  width: 100%;
   height: auto;
   overflow: visible;
+  box-sizing: border-box;
 }
 
+/* ─── Consistent Content Centering Utilities ─── */
+.apple-container-sm {
+  width: min(100%, 36rem);
+  margin-inline: auto;
+}
+.apple-container-md {
+  width: min(100%, 48rem);
+  margin-inline: auto;
+}
+.apple-container-lg {
+  width: min(100%, 64rem);
+  margin-inline: auto;
+}
+
+/* ─── Apple-style Interactive Panel Card ─── */
+.apple-interactive-panel {
+  width: 100%;
+  margin-inline: auto;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+  transition: box-shadow 0.2s var(--ease-apple), border-color 0.2s var(--ease-apple);
+}
+
+/* ─── Focus Visibility & Keyboard Accessibility ─── */
+:focus-visible {
+  outline: 2px solid var(--color-apple-blue) !important;
+  outline-offset: 2px !important;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-apple-blue) !important;
+  outline-offset: 2px !important;
+}
+
+/* ─── 3D transform utilities ─── */
 @layer utilities {
-  .perspective-1000 {
-    perspective: 1000px;
-    -webkit-perspective: 1000px;
-  }
-  .perspective-1200 {
-    perspective: 1200px;
-    -webkit-perspective: 1200px;
-  }
-  .transform-style-3d {
-    transform-style: preserve-3d;
-    -webkit-transform-style: preserve-3d;
-  }
-  .preserve-3d {
-    transform-style: preserve-3d;
-    -webkit-transform-style: preserve-3d;
-  }
-  .backface-hidden {
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-  }
-  .backface-visible {
-    backface-visibility: visible;
-    -webkit-backface-visibility: visible;
-  }
+  .perspective-1000 { perspective: 1000px; -webkit-perspective: 1000px; }
+  .perspective-1200 { perspective: 1200px; -webkit-perspective: 1200px; }
+  .transform-style-3d { transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+  .preserve-3d { transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+  .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .backface-visible { backface-visibility: visible; -webkit-backface-visibility: visible; }
 }
 
-/* Light Mode Glassmorphism & Custom Smooth Scrollbars */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
+/* ─── Scrollbar styling ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(245, 245, 247, 0.6); }
+::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.16); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 113, 227, 0.5); }
 
-::-webkit-scrollbar-track {
-  background: rgba(245, 245, 247, 0.6);
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
-  border-radius: 9999px;
-  transition: background 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 113, 227, 0.5);
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Apple Pro Glassmorphism with Optimized GPU Fill-Rate */
+/* ─── Glassmorphism utilities ─── */
 .apple-glass {
   background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
 }
-
 .apple-glass-subtle {
   background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(10px);
@@ -156,35 +267,17 @@
   border: 1px solid rgba(255, 255, 255, 0.55);
 }
 
-.apple-glass-pill {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.65);
-}
-
-/* GPU Acceleration & Performance Layer Utilities */
+/* ─── GPU acceleration utilities ─── */
 .gpu-layer {
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
   will-change: transform;
 }
-
 .contain-paint {
   contain: paint layout;
 }
 
-.contain-strict {
-  contain: strict;
-}
-
-/* Smooth motion smoothing */
-* {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Ensure Avatar SVGs fill and scale cleanly with containment */
+/* ─── Avatar SVG containment ─── */
 .bs-avatar {
   display: inline-grid !important;
   place-items: center !important;
@@ -192,7 +285,6 @@
   height: 100% !important;
   contain: paint layout !important;
 }
-
 .bs-avatar svg {
   width: 100% !important;
   height: 100% !important;
@@ -200,21 +292,23 @@
   overflow: visible !important;
 }
 
-/* Global Prefers-Reduced-Motion Accessibility Mode */
+/* ─── Touch vs Hover ergonomics ─── */
+@media (hover: hover) and (pointer: fine) {
+  .hover-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px -2px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* ─── Reduced Motion ─── */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-
-  .animate-spin-slow,
-  .animate-pulse,
-  .animate-ping {
-    animation: none !important;
+  .mobile-transition-indicator {
+    display: none !important;
   }
 }
-

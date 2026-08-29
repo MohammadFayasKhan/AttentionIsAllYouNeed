@@ -7,7 +7,7 @@
  *   PE_(pos, 2i+1) = cos(pos / 10000^(2i / d_model))
  *
  * Layout & Content Protection:
- *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
+ *   - Centered container with auto-height and high-DPI canvas.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -31,7 +31,6 @@ export const PositionalEncoding: React.FC = () => {
   const isVisibleRef = useRef<boolean>(true);
   const sizeRef = useRef<{ width: number; height: number; dpr: number }>({ width: 400, height: 120, dpr: 1 });
 
-  // Dimension presets to inspect
   const dimensions = [
     { dim: 0, label: "2i = 0 (λ = 2π)", color: "#0071e3", bg: "bg-blue-100 text-apple-blue" },
     { dim: 64, label: "2i = 64 (λ = 54π)", color: "#00c7be", bg: "bg-teal-100 text-teal-800" },
@@ -185,11 +184,9 @@ export const PositionalEncoding: React.FC = () => {
         ctx.fill();
       };
 
-      // 1. Low Frequency Sine (2i = 0, λ = 2π) - Primary Blue
+      // Waves
       drawWave((1 / Math.pow(10000, 0 / d_model)) * 0.75, false, '#0071e3', 'rgba(0, 113, 227, 0.08)', 2.5, 0.5, height / 3.2);
-      // 2. Medium Harmonic Sine (2i = 64, λ = 54π) - Radiant Teal
       drawWave((1 / Math.pow(10000, (2 * 32) / d_model)) * 0.45, false, '#00c7be', 'rgba(0, 199, 190, 0.06)', 1.8, -0.35, height / 3.8);
-      // 3. High Frequency Cosine (2i = 128, λ = 1468π) - Vibrant Purple
       drawWave((1 / Math.pow(10000, (2 * 96) / d_model)) * 0.28, true, '#af52de', 'rgba(175, 82, 222, 0.06)', 2.0, 0.6, height / 3.4);
 
       // Active Token Laser Marker
@@ -258,7 +255,7 @@ export const PositionalEncoding: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer"
+      className="w-full max-w-2xl mx-auto h-auto rounded-2xl bg-slate-50/80 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer self-center"
     >
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-1.5 gap-1.5">
@@ -275,11 +272,12 @@ export const PositionalEncoding: React.FC = () => {
         <div className="flex items-center gap-1.5 font-mono text-xs flex-wrap">
           <button
             onClick={toggleAutoPlay}
-            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs focus-visible:ring-2 focus-visible:ring-apple-blue ${
               isPlaying
                 ? 'bg-apple-blue text-white hover:bg-blue-600'
                 : 'bg-slate-100 text-apple-secondary hover:text-apple-text hover:bg-slate-200'
             }`}
+            aria-label="Toggle auto-sweep"
           >
             {isPlaying ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 fill-current" />}
             <span>{isPlaying ? 'Auto-Sweep' : 'Play'}</span>
@@ -289,8 +287,9 @@ export const PositionalEncoding: React.FC = () => {
               setPosition(0);
               virtualPosRef.current = 0;
             }}
-            className="p-1 rounded-full bg-black/5 text-apple-secondary hover:text-apple-text transition-all"
+            className="p-1 rounded-full bg-black/5 text-apple-secondary hover:text-apple-text transition-all focus-visible:ring-2 focus-visible:ring-apple-blue"
             title="Reset Position to 0"
+            aria-label="Reset position"
           >
             <RotateCcw className="w-3 h-3" />
           </button>
@@ -354,7 +353,7 @@ export const PositionalEncoding: React.FC = () => {
                   isPlayingRef.current = false;
                   setSelectedDimension(d.dim);
                 }}
-                className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all ${
+                className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all focus-visible:ring-2 focus-visible:ring-apple-blue ${
                   selectedDimension === d.dim
                     ? `${d.bg} shadow-apple-xs border border-black/10`
                     : 'bg-black/5 text-apple-secondary hover:text-apple-text'

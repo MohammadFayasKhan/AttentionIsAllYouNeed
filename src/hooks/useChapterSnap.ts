@@ -1,263 +1,234 @@
 /**
  * useChapterSnap.ts
- * --------------------------------------------------------------------------------
- * Architecture Overview:
- * Custom React hook that orchestrates smooth, momentum-protected chapter navigation
- * with strict anti-double-scroll inertia filters for macOS trackpads and high-DPI mice.
+ * ─────────────────────────────────────────────────────────────────
+ * Section-by-Section Snap Navigation Hook.
  *
- * Anti-Double-Scroll Mechanics:
- *   1. Kinetic Cooldown Window (700ms):
- *      Prevents decaying macOS inertia wheel events from re-triggering a second chapter
- *      transition during a single physical swipe gesture.
- *   2. Direction Reversal Reset:
- *      Instantly resets the delta accumulator if the user changes scroll direction.
- *   3. Dynamic Inertia Tail Damping:
- *      Continuously clears inertia accumulator during the active cooldown period.
- *   4. Instant Unlock on Modal Close:
- *      Clears all locks and accumulators whenever modal state changes so the main page
- *      is immediately interactive.
+ * ARCHITECTURE:
+ *   - ONE chapter visible at a time (fullscreen stage).
+ *   - Explicit chapter state machine: activeIndex drives which chapter renders.
+ *   - Arrow Down / Page Down / Space → next chapter.
+ *   - Arrow Up / Page Up / Shift+Space → previous chapter.
+ *   - Home → first chapter, End → last chapter.
+ *   - Mouse wheel / trackpad: debounced direction detection → advance/retreat.
+ *   - Touch swipe: vertical swipe detection → advance/retreat.
+ *   - Short cooldown (400ms) prevents rapid over-scrolling while feeling responsive.
+ *   - No scroll position dependency — the page never scrolls.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { oneeBridge } from '../lib/oneeEvents';
 
-const SCROLL_COOLDOWN_MS = 700; // Cooldown window to swallow trackpad inertia tails
-const SCROLL_THRESHOLD_PX = 65; // Minimum accumulated delta to trigger a chapter change
+export interface TransitionTargetInfo {
+  type: 'next' | 'prev';
+  targetIndex: number;
+  chapterNumber: string;
+  title: string;
+}
+
+const COOLDOWN_MS = 400;
+const WHEEL_THRESHOLD = 30;       // px of accumulated delta before triggering
+const TOUCH_SWIPE_THRESHOLD = 50; // px minimum vertical swipe distance
 
 export function useChapterSnap(sectionIds: string[], initialIndex = 0) {
+  const total = sectionIds.length;
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [direction, setDirection] = useState<'next' | 'prev' | 'none'>('none');
 
-  const lastTriggerTimeRef = useRef<number>(0);
-  const isLockedRef = useRef<boolean>(false);
-  const deltaAccRef = useRef<number>(0);
-  const activeIndexRef = useRef<number>(activeIndex);
-  activeIndexRef.current = activeIndex;
+  const activeIdxRef = useRef(initialIndex);
+  const cooldownRef = useRef(false);
+  const wheelAccumRef = useRef(0);
+  const wheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartRef = useRef<{ y: number; time: number } | null>(null);
 
-  const totalChapters = sectionIds.length;
+  // Keep ref in sync
+  activeIdxRef.current = activeIndex;
 
-  // Clear locks when modal opens or closes
-  useEffect(() => {
-    isLockedRef.current = false;
-    deltaAccRef.current = 0;
-    lastTriggerTimeRef.current = 0;
-  }, [isModalOpen]);
+  // ── Core navigation ───────────────────────────────────────────
+  const goToChapter = useCallback((target: number | string) => {
+    let targetIndex: number;
 
-  const goToChapter = useCallback(
-    (index: number) => {
-      const clamped = Math.max(0, Math.min(totalChapters - 1, index));
-      if (clamped !== activeIndexRef.current) {
-        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-        setActiveIndex(clamped);
-        oneeBridge.emit('chapter_change');
-      }
-    },
-    [totalChapters]
-  );
+    if (typeof target === 'number') {
+      targetIndex = Math.max(0, Math.min(total - 1, target));
+    } else {
+      targetIndex = sectionIds.indexOf(target);
+      if (targetIndex === -1) targetIndex = 0;
+    }
+
+    if (targetIndex === activeIdxRef.current) return;
+
+    setDirection(targetIndex > activeIdxRef.current ? 'next' : 'prev');
+    setActiveIndex(targetIndex);
+    activeIdxRef.current = targetIndex;
+    oneeBridge.emit('chapter_change');
+
+    // Cooldown to prevent rapid multi-fire
+    cooldownRef.current = true;
+    setTimeout(() => { cooldownRef.current = false; }, COOLDOWN_MS);
+  }, [sectionIds, total]);
 
   const nextChapter = useCallback(() => {
-    if (activeIndexRef.current < totalChapters - 1) {
-      goToChapter(activeIndexRef.current + 1);
+    if (cooldownRef.current) return;
+    if (activeIdxRef.current < total - 1) {
+      goToChapter(activeIdxRef.current + 1);
     }
-  }, [goToChapter, totalChapters]);
+  }, [goToChapter, total]);
 
   const prevChapter = useCallback(() => {
-    if (activeIndexRef.current > 0) {
-      goToChapter(activeIndexRef.current - 1);
+    if (cooldownRef.current) return;
+    if (activeIdxRef.current > 0) {
+      goToChapter(activeIdxRef.current - 1);
     }
   }, [goToChapter]);
 
-  // Robust wheel listener with anti-double-scroll inertia damping
+  // ── Keyboard navigation ───────────────────────────────────────
   useEffect(() => {
-    let unlockTimer: NodeJS.Timeout | null = null;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept when focus is in an input, textarea, or contenteditable
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if ((e.target as HTMLElement).isContentEditable) return;
 
-    const handleWheel = (e: WheelEvent) => {
-      // Don't intercept wheel events when modal is open
-      if (isModalOpen) return;
-
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-
-      if (['input', 'textarea', 'select'].includes(target.tagName.toLowerCase())) {
-        return;
-      }
-
-      // Check if user is scrolling inside an internal scrollable container via fast O(1) selector
-      const scrollableContainer = target.closest<HTMLElement>(
-        '.allow-inner-scroll, .overflow-y-auto, .overflow-auto, .no-scrollbar, pre, [data-scrollable="true"]'
-      );
-
-      if (scrollableContainer && scrollableContainer !== document.body && scrollableContainer !== document.documentElement) {
-        const { scrollTop, scrollHeight, clientHeight } = scrollableContainer;
-        if (scrollHeight > clientHeight + 4) {
-          const canScrollDown = e.deltaY > 0 && scrollTop + clientHeight < scrollHeight - 3;
-          const canScrollUp = e.deltaY < 0 && scrollTop > 3;
-          if (canScrollDown || canScrollUp) {
-            return;
+      switch (e.key) {
+        case 'ArrowDown':
+        case 'PageDown':
+          e.preventDefault();
+          nextChapter();
+          break;
+        case 'ArrowUp':
+        case 'PageUp':
+          e.preventDefault();
+          prevChapter();
+          break;
+        case ' ':
+          e.preventDefault();
+          if (e.shiftKey) {
+            prevChapter();
+          } else {
+            nextChapter();
           }
+          break;
+        case 'Home':
+          e.preventDefault();
+          goToChapter(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          goToChapter(total - 1);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { passive: false });
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [nextChapter, prevChapter, goToChapter, total]);
+
+  // ── Wheel / trackpad navigation ───────────────────────────────
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      // Don't intercept if inside a scrollable child (e.g. dropdown, overlay)
+      const target = e.target as HTMLElement;
+      const scrollableParent = target.closest('[data-scrollable]');
+      if (scrollableParent) return;
+
+      // Check if the chapter content is scrollable and not at boundary
+      const stageContent = document.querySelector('.chapter-stage-content') as HTMLElement | null;
+      if (stageContent) {
+        const { scrollTop, scrollHeight, clientHeight } = stageContent;
+        const isAtTop = scrollTop <= 1;
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1;
+        const isScrollable = scrollHeight > clientHeight + 2;
+
+        // If content is scrollable and NOT at boundary, let native scroll happen
+        if (isScrollable) {
+          if (e.deltaY > 0 && !isAtBottom) return;  // scrolling down, not at bottom
+          if (e.deltaY < 0 && !isAtTop) return;     // scrolling up, not at top
         }
       }
 
-      // Allow natural document scrolling if page content is taller than viewport
-      const docScrollTop = window.scrollY || document.documentElement.scrollTop || 0;
-      const docScrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
-      const docClientHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-      if (docScrollHeight > docClientHeight + 8) {
-        const canScrollDocDown = e.deltaY > 0 && docScrollTop + docClientHeight < docScrollHeight - 6;
-        const canScrollDocUp = e.deltaY < 0 && docScrollTop > 6;
-        if (canScrollDocDown || canScrollDocUp) {
-          deltaAccRef.current = 0; // Clear accumulated delta while actively scrolling document
-          return; // Let natural browser scrolling reveal full chapter content and bottom gap
-        }
-      }
+      e.preventDefault();
 
-      const now = Date.now();
+      // Accumulate delta
+      wheelAccumRef.current += e.deltaY;
 
-      // If within cooldown period, swallow trackpad inertia
-      if (now - lastTriggerTimeRef.current < SCROLL_COOLDOWN_MS || isLockedRef.current) {
-        if (e.cancelable) e.preventDefault();
-        deltaAccRef.current = 0;
-        return;
-      }
+      // Clear reset timer
+      if (wheelTimerRef.current) clearTimeout(wheelTimerRef.current);
 
-      // Reset accumulator if direction reversed
-      if ((deltaAccRef.current > 0 && e.deltaY < 0) || (deltaAccRef.current < 0 && e.deltaY > 0)) {
-        deltaAccRef.current = 0;
-      }
+      // Reset accumulator after inactivity
+      wheelTimerRef.current = setTimeout(() => {
+        wheelAccumRef.current = 0;
+      }, 150);
 
-      deltaAccRef.current += e.deltaY;
-
-      // Check if accumulated delta exceeds threshold
-      if (Math.abs(deltaAccRef.current) >= SCROLL_THRESHOLD_PX) {
-        if (e.cancelable) e.preventDefault();
-        lastTriggerTimeRef.current = now;
-        isLockedRef.current = true;
-
-        if (deltaAccRef.current > 0) {
+      // Check threshold
+      if (Math.abs(wheelAccumRef.current) >= WHEEL_THRESHOLD) {
+        if (wheelAccumRef.current > 0) {
           nextChapter();
         } else {
           prevChapter();
         }
-
-        deltaAccRef.current = 0;
-
-        if (unlockTimer) clearTimeout(unlockTimer);
-        unlockTimer = setTimeout(() => {
-          isLockedRef.current = false;
-          deltaAccRef.current = 0;
-        }, SCROLL_COOLDOWN_MS);
+        wheelAccumRef.current = 0;
       }
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
-    return () => {
-      window.removeEventListener('wheel', handleWheel);
-      if (unlockTimer) clearTimeout(unlockTimer);
-    };
-  }, [isModalOpen, nextChapter, prevChapter]);
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [nextChapter, prevChapter]);
 
-  // Touch swipe gestures with cooldown protection
+  // ── Touch swipe navigation ────────────────────────────────────
   useEffect(() => {
-    let touchStartY = 0;
-    let touchStartX = 0;
-
     const handleTouchStart = (e: TouchEvent) => {
-      if (isModalOpen || e.touches.length !== 1) return;
-      const target = e.target as HTMLElement | null;
-      if (target?.closest('input, button, select, textarea, [role="slider"], canvas')) {
-        touchStartY = 0;
-        touchStartX = 0;
-        return;
+      const touch = e.touches[0];
+      if (touch) {
+        touchStartRef.current = { y: touch.clientY, time: Date.now() };
       }
-      touchStartY = e.touches[0].clientY;
-      touchStartX = e.touches[0].clientX;
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
-      if (isModalOpen || touchStartY === 0) return;
-      const now = Date.now();
-      if (now - lastTriggerTimeRef.current < SCROLL_COOLDOWN_MS || isLockedRef.current) {
-        return;
-      }
+      if (!touchStartRef.current) return;
 
-      const touchEndY = e.changedTouches[0].clientY;
-      const touchEndX = e.changedTouches[0].clientX;
-      const deltaY = touchStartY - touchEndY;
-      const deltaX = touchStartX - touchEndX;
+      const touch = e.changedTouches[0];
+      if (!touch) return;
 
-      // Allow touch scrolling document if taller than viewport
-      const docScrollTop = window.scrollY || document.documentElement.scrollTop || 0;
-      const docScrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
-      const docClientHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-      if (docScrollHeight > docClientHeight + 6) {
-        const canScrollDocDown = deltaY > 0 && docScrollTop + docClientHeight < docScrollHeight - 4;
-        const canScrollDocUp = deltaY < 0 && docScrollTop > 4;
-        if (canScrollDocDown || canScrollDocUp) {
-          return;
-        }
-      }
+      const deltaY = touchStartRef.current.y - touch.clientY;
+      const elapsed = Date.now() - touchStartRef.current.time;
 
-      if (Math.abs(deltaY) > 55 && Math.abs(deltaY) > Math.abs(deltaX) * 1.25) {
-        lastTriggerTimeRef.current = now;
-        isLockedRef.current = true;
-
+      // Only respond to intentional swipes (not taps or slow drags)
+      if (Math.abs(deltaY) >= TOUCH_SWIPE_THRESHOLD && elapsed < 500) {
         if (deltaY > 0) {
-          nextChapter();
+          nextChapter(); // swipe up → next
         } else {
-          prevChapter();
+          prevChapter(); // swipe down → prev
         }
-
-        setTimeout(() => {
-          isLockedRef.current = false;
-        }, SCROLL_COOLDOWN_MS);
       }
+
+      touchStartRef.current = null;
     };
 
     window.addEventListener('touchstart', handleTouchStart, { passive: true });
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
-
     return () => {
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isModalOpen, nextChapter, prevChapter]);
-
-  // Keyboard navigation with key repeat damping
-  useEffect(() => {
-    let lastKeyTime = 0;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (isModalOpen) return;
-      if (['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase())) {
-        return;
-      }
-
-      const now = Date.now();
-      if (now - lastKeyTime < 350) return; // Prevent rapid key repetition
-
-      if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === 'ArrowRight') {
-        e.preventDefault();
-        lastKeyTime = now;
-        nextChapter();
-      } else if (e.key === 'ArrowUp' || e.key === 'PageUp' || e.key === 'ArrowLeft') {
-        e.preventDefault();
-        lastKeyTime = now;
-        prevChapter();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isModalOpen, nextChapter, prevChapter]);
+  }, [nextChapter, prevChapter]);
 
   return {
     activeIndex,
-    activeChapterId: sectionIds[activeIndex] || sectionIds[0],
+    activeChapterId: sectionIds[activeIndex] ?? sectionIds[0],
     goToChapter,
     nextChapter,
     prevChapter,
-    totalChapters,
+    totalChapters: total,
     isModalOpen,
-    setIsModalOpen
+    setIsModalOpen,
+    direction,
+    transitionProgress: 0,
+    setTransitionProgress: () => {},
+    transitionTarget: null,
+    setTransitionTarget: () => {},
+    isTransitioning: false,
+    transitionDirection: direction,
   };
 }
+
+export default useChapterSnap;

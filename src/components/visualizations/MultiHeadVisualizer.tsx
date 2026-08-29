@@ -6,13 +6,13 @@
  *   MultiHead(Q,K,V) = Concat(head_1, ..., head_h)W^O
  *
  * Layout & Content Protection:
- *   - Uses `w-full h-auto` with clean natural padding and non-overlapping flex flow.
+ *   - Centered container with auto-height and responsive subspace grid.
  */
 
 import React, { useState, useEffect } from 'react';
 import { oneeBridge } from '../../lib/oneeEvents';
 import { motion } from 'framer-motion';
-import { Layers, Play, Pause, Sparkles, Eye } from 'lucide-react';
+import { Layers, Play, Pause, Eye } from 'lucide-react';
 
 interface HeadRole {
   id: number;
@@ -29,7 +29,6 @@ export const MultiHeadVisualizer: React.FC = () => {
   const [headCount, setHeadCount] = useState<number>(8); // Baseline h=8 as per Section 3.2.2
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
 
-  // Concrete subspace role specializations observed in the 8-head model
   const headRoles: HeadRole[] = [
     {
       id: 1,
@@ -133,7 +132,7 @@ export const MultiHeadVisualizer: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-auto rounded-2xl bg-slate-50/70 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer">
+    <div className="w-full max-w-2xl mx-auto h-auto rounded-2xl bg-slate-50/80 border border-black/5 shadow-apple-xs p-2.5 sm:p-3 flex flex-col gap-2 font-sans gpu-layer self-center">
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/5 pb-1.5 gap-1.5">
         <div>
@@ -149,11 +148,12 @@ export const MultiHeadVisualizer: React.FC = () => {
         <div className="flex items-center gap-1.5 text-xs font-mono flex-wrap">
           <button
             onClick={toggleAutoPlay}
-            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-apple-xs focus-visible:ring-2 focus-visible:ring-apple-blue ${
               isPlaying
                 ? 'bg-apple-blue text-white hover:bg-blue-600'
                 : 'bg-slate-100 text-apple-secondary hover:text-apple-text hover:bg-slate-200'
             }`}
+            aria-label="Toggle auto-sweep"
           >
             {isPlaying ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 fill-current" />}
             <span>{isPlaying ? 'Auto-Sweep' : 'Play'}</span>
@@ -175,16 +175,16 @@ export const MultiHeadVisualizer: React.FC = () => {
             <motion.button
               key={idx}
               onClick={() => handleSelectHead(idx)}
-              whileHover={{ scale: 1.06 }}
-              whileTap={{ scale: 0.94 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               animate={{
                 scale: isSelected ? 1.04 : 1
               }}
               transition={{ duration: 0.2 }}
-              className={`py-2 px-1.5 rounded-2xl text-xs font-mono font-bold transition-all border text-center relative ${
+              className={`py-2 px-1.5 rounded-2xl text-xs font-mono font-bold transition-all border text-center relative focus-visible:ring-2 focus-visible:ring-apple-blue ${
                 isSelected
                   ? 'bg-apple-blue text-white border-apple-blue shadow-apple-md z-10'
-                  : 'bg-slate-50 text-apple-text border-black/5 hover:bg-black/5'
+                  : 'bg-white text-apple-text border-black/5 hover:bg-slate-100'
               }`}
             >
               H{idx + 1}
@@ -253,7 +253,6 @@ export const MultiHeadVisualizer: React.FC = () => {
           />
         </div>
         <div className="flex items-center gap-1.5 text-apple-blue font-bold text-[10px] sm:text-[11px]">
-          <Sparkles className="w-3.5 h-3.5" />
           <span>
             {headCount === 1
               ? 'Single head h=1 drops BLEU by 0.9 pts (24.9 vs 25.8)'
