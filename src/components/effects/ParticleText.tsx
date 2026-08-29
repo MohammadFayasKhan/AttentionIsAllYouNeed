@@ -489,13 +489,13 @@ export const ParticleText: React.FC<ParticleTextProps> = ({
 
       const totalRows = lines.length * 7 + (lines.length - 1) * 3;
 
-      const maxAvailableWidth = width * 0.88;
-      const maxAvailableHeight = height * 0.76;
+      const maxAvailableWidth = width * 0.94;
+      const maxAvailableHeight = height * 0.82;
 
       const pitchX = maxAvailableWidth / maxCols;
       const pitchY = maxAvailableHeight / totalRows;
       const pitch = Math.min(pitchX, pitchY, isMobile ? 6.5 : 8.5);
-      const dotRadius = Math.max(1.2, Math.min(2.8, pitch * 0.38));
+      const dotRadius = Math.max(1.1, Math.min(2.8, pitch * 0.38));
 
       const totalBlockWidth = maxCols * pitch;
       const totalBlockHeight = totalRows * pitch;
@@ -522,6 +522,12 @@ export const ParticleText: React.FC<ParticleTextProps> = ({
 
           const glyph = GLYPHS_5X7[char] || GLYPHS_5X7['A'];
 
+          // Highlight "ATTENTION" in highlightColor (blue) and "IS ALL YOU NEED" in base color
+          const isAttentionWord =
+            (lines.length > 1 && lineIdx === 0 && lineStr === 'ATTENTION') ||
+            (lines.length === 1 && cIdx < 9 && upper.startsWith('ATTENTION'));
+          const dotColor = isAttentionWord ? highlightColor : color;
+
           for (let row = 0; row < 7; row++) {
             const rowBits = glyph[row];
             for (let col = 0; col < 5; col++) {
@@ -534,9 +540,6 @@ export const ParticleText: React.FC<ParticleTextProps> = ({
                 const dist = 70 + (globalDotIndex % 30) * 3;
                 const startX = targetX + Math.cos(angle) * dist;
                 const startY = targetY + Math.sin(angle) * dist;
-
-                const xProgress = targetX / width;
-                const dotColor = xProgress < 0.35 ? highlightColor : color;
 
                 newDots.push({
                   targetX,

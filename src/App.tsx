@@ -1,15 +1,19 @@
 /**
  * App.tsx
  * ─────────────────────────────────────────────────────────────────
- * Root component.
+ * Root component for "Attention Is All You Need"
  *
- * Section-by-Section Snap Architecture:
- *   - ONE chapter visible at a time inside a full-viewport stage.
- *   - AnimatePresence drives smooth blur+fade+slide transitions between chapters.
- *   - Fixed Navigation header at top: 0, never moves.
- *   - Chapter Rail fixed on left (xl: screens).
- *   - Keyboard (Arrow/Page/Home/End), wheel, trackpad, and touch swipe
- *     all navigate between chapters via useChapterSnap.
+ * Project: AttentionIsAllYouNeed
+ * Built by: Mohammad Fayas Khan (3rd-year B.Tech CSE AI/ML student at LPU)
+ *
+ * Architecture & Interactions:
+ *   - Full-viewport chapter stage rendering one chapter at a time with direction-aware transitions.
+ *   - Fixed Navigation header at top with synchronized difficulty mode switcher.
+ *   - Desktop Left-Margin Chapter Dot Rail (xl: screens).
+ *   - Completely non-intrusive mobile scroll guidance: only appears dynamically when the user
+ *     reaches the true chapter boundary and actively pulls toward the next/previous chapter.
+ *   - In-flow chapter completion card at the bottom of each chapter.
+ *   - Decoupled Onee research companion overlay and event bridge.
  */
 
 import React, { useState } from 'react';
@@ -19,6 +23,7 @@ import { Navigation } from './components/storytelling/Navigation';
 import { SpatialScene } from './components/storytelling/SpatialScene';
 import { LivingOneeStage } from './components/onee/LivingOneeStage';
 import { ChapterRail } from './components/storytelling/ChapterRail';
+import { MobileScrollTransitionIndicator } from './components/storytelling/MobileScrollTransitionIndicator';
 import { OverlayTab } from './components/onee/FullOneeOverlay';
 import { ExpressionKey } from './components/assistant/AvatarController';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,7 +34,7 @@ const TRANSITION_CONFIG = {
   ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
 };
 
-// Slide offset for enter/exit (subtle, not jarring)
+// Slide offset for enter/exit
 const SLIDE_OFFSET = 50;
 
 export function App() {
@@ -39,17 +44,31 @@ export function App() {
     activeIndex,
     activeChapterId,
     goToChapter,
+    nextChapter,
+    prevChapter,
     totalChapters,
     isModalOpen,
     setIsModalOpen,
     direction,
+    isTransitioning,
+    pullProgress,
+    pullTarget,
+    pullOffsetPx,
   } = useChapterSnap(sectionIds);
 
   const [mode, setMode] = useState<EducationalMode>('BEGINNER');
   const [modalTab, setModalTab] = useState<OverlayTab>('chat');
 
   const activeChapter = STORY_CHAPTERS[activeIndex] ?? STORY_CHAPTERS[0];
-  const currentMood   = (activeChapter.oneeMood as ExpressionKey) ?? 'neutral';
+  const currentMood = (activeChapter.oneeMood as ExpressionKey) ?? 'neutral';
+
+  const nextChapterMeta =
+    activeIndex < totalChapters - 1
+      ? {
+          chapterNumber: String(STORY_CHAPTERS[activeIndex + 1]?.chapterNumber),
+          title: STORY_CHAPTERS[activeIndex + 1]?.title,
+        }
+      : null;
 
   const handleOpenCompanion = (tab: OverlayTab = 'chat') => {
     setModalTab(tab);
@@ -62,8 +81,7 @@ export function App() {
 
   return (
     <div className="app-root">
-
-      {/* Ambient background glow — fixed, pointer-events-none */}
+      {/* Ambient background glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
         <div
           className="absolute -top-[15%] -left-[10%] w-[80vw] max-w-[650px] h-[80vw] max-h-[650px] rounded-full opacity-40"
@@ -75,7 +93,7 @@ export function App() {
         />
       </div>
 
-      {/* Fixed top navigation bar — rock-solid, firmly anchored */}
+      {/* Fixed top navigation bar */}
       <Navigation
         activeSectionId={activeChapterId}
         onNavigate={goToChapter}
@@ -113,27 +131,29 @@ export function App() {
               filter: 'blur(4px)',
             }}
             transition={TRANSITION_CONFIG}
+            style={{
+              transform: pullOffsetPx !== 0 ? `translateY(${pullOffsetPx}px)` : undefined,
+              transition: pullOffsetPx === 0 ? 'transform 0.25s cubic-bezier(0.2, 1, 0.3, 1)' : 'none',
+            }}
           >
             <SpatialScene
               chapter={activeChapter}
               isActive={true}
               mode={mode}
               onOpenCompanion={handleOpenCompanion}
+              onNextChapter={nextChapter}
+              nextChapterMeta={nextChapterMeta}
             />
           </motion.div>
         </AnimatePresence>
       </main>
 
-      {/* Chapter position indicator (mobile) */}
-      <div className="chapter-counter xl:hidden">
-        <span className="chapter-counter-current">
-          {String(activeIndex + 1).padStart(2, '0')}
-        </span>
-        <span className="chapter-counter-sep">/</span>
-        <span className="chapter-counter-total">
-          {String(totalChapters).padStart(2, '0')}
-        </span>
-      </div>
+      {/* Non-intrusive mobile-only scroll guidance cue (ONLY appears when pulling at boundary) */}
+      <MobileScrollTransitionIndicator
+        progress={pullProgress}
+        target={pullTarget}
+        isTransitioning={isTransitioning}
+      />
 
       {/* Onee companion overlay — mounted once, shown/hidden via state */}
       <LivingOneeStage
